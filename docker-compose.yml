@@ -1,0 +1,16 @@
+name: portfolio
+services:
+  web:
+    container_name: web
+    build:
+      context: ./apps/web
+      dockerfile: ./Dockerfile
+    restart: always
+    ports:
+      - "127.0.0.1:4200:4200"
+    networks:
+      - public_net
+
+networks:
+  public_net:
+    driver: bridge
