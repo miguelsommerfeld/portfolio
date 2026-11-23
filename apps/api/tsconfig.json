@@ -4,7 +4,8 @@
         "node"
       ],
       "paths": {
-        "@shared/*": ["./../../shared/*"]
+        "@shared/*": ["./../../shared/*"],
+        "@/*": ["./src/*"]
       },
       "rootDir": "./../../",
       "outDir": "dist",
