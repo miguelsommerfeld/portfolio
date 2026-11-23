@@ -3,10 +3,13 @@
       "types": [
         "node"
       ],
-      "rootDir": "src",
+      "paths": {
+        "@shared/*": ["./../../shared/*"]
+      },
+      "rootDir": "./../../",
       "outDir": "dist",
       "strict": true,
       "noEmit": false,
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "./../../shared/**/*"]
 }

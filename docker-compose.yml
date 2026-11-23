@@ -14,8 +14,8 @@ services:
   api:
     container_name: api
     build:
-      context: ./apps/api
-      dockerfile: ./Dockerfile
+      context: ./
+      dockerfile: ./apps/api/Dockerfile
     restart: always
     ports:
       - "127.0.0.1:3333:3333"

@@ -1,11 +1,13 @@
 {
-  "name": "@portfolio/api-v1",
+  "name": "@portfolio/api",
+  "version": "1.0.0",
+  "private": true,
   "type": "module",
-  "main": "dist/server.js",
+  "main": "dist/apps/api/src/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/apps/api/src/server.js"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.5",
@@ -14,9 +16,7 @@
     "@fastify/oauth2": "^8.3.2",
     "@fastify/rate-limit": "^11.3.0",
     "@fastify/type-provider-zod": "^1.0.3",
-    "fastify": "^5.12.8",
-    "serve": "^14.2.8",
-    "zod": "^4.6.7"
+    "fastify": "^5.12.8"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

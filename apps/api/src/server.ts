@@ -1,4 +1,5 @@
 import fastify from "fastify";
+import { env } from "@shared/config/env"
 
 export const server = fastify({ logger:true })
 
