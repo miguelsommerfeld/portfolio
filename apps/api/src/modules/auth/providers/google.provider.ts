@@ -2,10 +2,7 @@ import fastifyOauth2 from "@fastify/oauth2";
 import { z } from "zod";
 import { env } from "@shared/config/env";
 import type { UserPayload } from "@shared/schemas/jwt.schema";
-import {
-  AuthError,
-  type OAuthProvider,
-} from "@/modules/auth/providers/oauth-provider";
+import { AuthError, type OAuthProvider } from "@/modules/auth/providers/oauth-provider";
 
 const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo";
 const USERINFO_TIMEOUT_MS = 10_000;

@@ -26,14 +26,17 @@ function parseDurationToSeconds(duration: string): number | undefined {
   return amount * DURATION_MULTIPLIERS_IN_SECONDS[unit];
 }
 
-export class TokenService {
+export class TokenService
+{
   constructor(private readonly jwt: JwtSigner) {}
 
-  public createSessionToken(user: UserPayload): string {
+  public createSessionToken(user: UserPayload): string
+  {
     return this.jwt.sign(user);
   }
 
-  public getSessionCookieOptions(): CookieSerializeOptions {
+  public getSessionCookieOptions(): CookieSerializeOptions
+  {
     const maxAge = parseDurationToSeconds(env.JWT_EXPIRES_IN);
 
     return {
@@ -46,7 +49,8 @@ export class TokenService {
     };
   }
 
-  public getClearCookieOptions(): CookieSerializeOptions {
+  public getClearCookieOptions(): CookieSerializeOptions
+  {
     return {
       httpOnly: true,
       secure: env.NODE_ENV === "production",
