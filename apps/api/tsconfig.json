@@ -1,16 +1,19 @@
 {
   "compilerOptions": {
-      "types": [
-        "node"
-      ],
-      "paths": {
-        "@shared/*": ["./../../shared/*"],
-        "@/*": ["./src/*"]
-      },
-      "rootDir": "./../../",
-      "outDir": "dist",
-      "strict": true,
-      "noEmit": false,
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "types": ["node"],
+    "paths": {
+      "@shared/*": ["./../../shared/*"],
+      "@/*": ["./src/*"]
+    },
+    "rootDir": "./../../",
+    "outDir": "dist",
+    "strict": true,
+    "noEmit": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true
   },
   "include": ["src/**/*", "./../../shared/**/*"]
 }

@@ -1,13 +1,18 @@
-import { z } from "zod"
-import { ProviderConfiguration } from "@fastify/oauth2"
+import { z } from "zod";
+import { userPayloadSchema } from "@shared/schemas/jwt.schema";
 
-export const providerInfo = z.object({
-  providerName: z.string(),
-  clientId: z.string(),
-  clientSecret: z.string(),
-  config: z.custom<ProviderConfiguration>(),
-  redirectPath: z.string(),
-  callbackUri: z.string()
-})
+export const oauthCallbackQuerySchema = z.object({
+  code: z.string().min(1).optional(),
+  state: z.string().min(1).optional(),
+  error: z.string().optional(),
+  error_description: z.string().optional(),
+});
 
-export type ProviderInfo = z.infer<typeof providerInfo>;
+export const authMeResponseSchema = z.object({
+  user: userPayloadSchema,
+});
+
+export const authErrorResponseSchema = z.object({
+  error: z.string(),
+  message: z.string(),
+});
