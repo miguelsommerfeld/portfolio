@@ -1,10 +1,9 @@
 import { createReadStream } from "node:fs";
 import type { FastifyPluginAsyncZod } from "@fastify/type-provider-zod";
-import { z } from "zod";
-import type { FastifyTypedInstance } from "@/types/fastify";
 import { authenticate } from "@/modules/auth/middlewares/auth.middleware";
-import { resumeCodeResponseSchema, resumeErrorResponseSchema, resumeHeadersSchema } from "@/modules/resume/resume.schema";
+import { resumeCodeResponseSchema, resumeErrorResponseSchema, resumeHeadersSchema, resumePdfResponseSchema } from "@/modules/resume/resume.schema";
 import { ResumeError } from "@/modules/resume/resume.service";
+import type { FastifyTypedInstance } from "@/types/fastify";
 
 export const resumeRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedInstance) {
   server.get("/", {
@@ -16,12 +15,16 @@ export const resumeRoutes: FastifyPluginAsyncZod = async function (server: Fasti
       },
     },
     schema: {
+      tags: ["Resume"],
+      summary: "Download resume PDF",
+      description: "Streams the resume PDF inline. Returns the censored variant by default, or the full variant when a valid daily code is supplied via the x-resume-code header.",
+      security: [{ cookieAuth: [] }],
       headers: resumeHeadersSchema,
       response: {
-        200: z.unknown(),
-        401: resumeErrorResponseSchema,
-        403: resumeErrorResponseSchema,
-        503: resumeErrorResponseSchema,
+        200: resumePdfResponseSchema,
+        401: resumeErrorResponseSchema.describe("Missing, expired, or invalid authentication cookie."),
+        403: resumeErrorResponseSchema.describe("Provided x-resume-code header is invalid or expired."),
+        503: resumeErrorResponseSchema.describe("Requested resume PDF file is currently unavailable."),
       },
     },
     handler: async (request, reply) => {
@@ -59,10 +62,21 @@ export const resumeRoutes: FastifyPluginAsyncZod = async function (server: Fasti
       },
     },
     schema: {
+      tags: ["Resume"],
+      summary: "Get daily resume access code",
+      description: "Generates and returns the daily access code required to unlock the full resume variant. Restricted to configured owner email addresses.",
+      security: [{ cookieAuth: [] }],
       response: {
-        200: resumeCodeResponseSchema,
-        401: resumeErrorResponseSchema,
-        403: resumeErrorResponseSchema,
+        200: resumeCodeResponseSchema.meta({
+          headers: {
+            "Cache-Control": {
+              type: "string",
+              description: "Always \"no-store\" to prevent caching of the daily access code.",
+            },
+          },
+        }).describe("Daily resume access code and expiration metadata."),
+        401: resumeErrorResponseSchema.describe("Missing, expired, or invalid authentication cookie."),
+        403: resumeErrorResponseSchema.describe("Authenticated user is not an authorized owner."),
       },
     },
     handler: async (request, reply) => {

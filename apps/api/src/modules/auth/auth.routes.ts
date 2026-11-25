@@ -1,17 +1,16 @@
 import fastifyOauth2 from "@fastify/oauth2";
 import type { FastifyPluginAsyncZod } from "@fastify/type-provider-zod";
-import type { FastifyTypedInstance } from "@/types/fastify";
 import { z } from "zod";
 import { env } from "@shared/config/env";
-import { authErrorResponseSchema, authMeResponseSchema, oauthCallbackQuerySchema, } from "@/modules/auth/auth.schema";
+import { authErrorResponseSchema, authMeResponseSchema, oauthCallbackQuerySchema } from "@/modules/auth/auth.schema";
 import { authenticate } from "@/modules/auth/middlewares/auth.middleware";
-import { AuthError, type OAuthProvider, toProviderResponse } from "@/modules/auth/providers/oauth-provider";
+import { AuthError, formatProviderName, type OAuthProvider, toProviderResponse } from "@/modules/auth/providers/oauth-provider";
 import { SESSION_COOKIE_NAME } from "@/modules/auth/token.service";
+import type { FastifyTypedInstance } from "@/types/fastify";
 
-async function registerOAuthProviderRoutes(
-  server: FastifyTypedInstance,
-  provider: OAuthProvider,
-): Promise<void> {
+async function registerOAuthProviderRoutes(server: FastifyTypedInstance, provider: OAuthProvider): Promise<void> {
+  const displayName = formatProviderName(provider.name);
+
   await server.register(fastifyOauth2, toProviderResponse(provider));
 
   server.get(`/${provider.name}/callback`, {
@@ -22,9 +21,20 @@ async function registerOAuthProviderRoutes(
       },
     },
     schema: {
+      tags: ["Auth"],
+      summary: `Handle ${displayName} OAuth2 callback`,
+      description: `Exchanges the ${displayName} authorization code for an access token, fetches the normalized user profile, sets the stateless "${SESSION_COOKIE_NAME}" HttpOnly JWT cookie on success, and redirects to the frontend application ("/" on success or "/login?error=<code>" on failure).`,
       querystring: oauthCallbackQuerySchema,
       response: {
-        302: z.undefined(),
+        302: z.undefined().meta({
+          headers: {
+            Location: {
+              type: "string",
+              format: "uri",
+              description: "Frontend redirect URL (\"/\" on success or \"/login?error=<code>\" on failure).",
+            },
+          },
+        }).describe("Redirects to the frontend application."),
       },
     },
     handler: async (request, reply) => {
@@ -75,9 +85,7 @@ async function registerOAuthProviderRoutes(
   });
 }
 
-export const authRoutes: FastifyPluginAsyncZod = async function (
-  server: FastifyTypedInstance,
-) {
+export const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedInstance) {
   for (const provider of server.authService.getProviders()) {
     await registerOAuthProviderRoutes(server, provider);
   }
@@ -85,9 +93,13 @@ export const authRoutes: FastifyPluginAsyncZod = async function (
   server.get("/me", {
     preHandler: [authenticate],
     schema: {
+      tags: ["Auth"],
+      summary: "Get authenticated user",
+      description: `Returns the authenticated user profile decoded from the stateless "${SESSION_COOKIE_NAME}" HttpOnly JWT cookie.`,
+      security: [{ cookieAuth: [] }],
       response: {
-        200: authMeResponseSchema,
-        401: authErrorResponseSchema,
+        200: authMeResponseSchema.describe("Authenticated user profile."),
+        401: authErrorResponseSchema.describe("Missing, expired, or invalid authentication cookie."),
       },
     },
     handler: async (request, reply) => {
@@ -97,8 +109,11 @@ export const authRoutes: FastifyPluginAsyncZod = async function (
 
   server.post("/logout", {
     schema: {
+      tags: ["Auth"],
+      summary: "Log out current session",
+      description: `Clears the stateless "${SESSION_COOKIE_NAME}" HttpOnly session cookie.`,
       response: {
-        204: z.undefined(),
+        204: z.undefined().describe("Session cookie cleared successfully."),
       },
     },
     handler: async (_request, reply) => {

@@ -4,9 +4,12 @@ import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
 import rateLimit from "@fastify/rate-limit";
+import swagger from "@fastify/swagger";
+import swaggerUi from "@fastify/swagger-ui";
 import { serializerCompiler, validatorCompiler, type ZodTypeProvider } from "@fastify/type-provider-zod";
 import fastify from "fastify";
 import { env } from "@shared/config/env";
+import { swaggerOptions, swaggerUiOptions } from "@/config/swagger";
 import { authRoutes } from "@/modules/auth/auth.routes";
 import { AuthService } from "@/modules/auth/auth.service";
 import { oauthProviders } from "@/modules/auth/providers/index";
@@ -52,6 +55,9 @@ export async function buildServer(providers: readonly OAuthProvider[] = oauthPro
       expiresIn: env.JWT_EXPIRES_IN,
     },
   });
+
+  await server.register(swagger, swaggerOptions);
+  await server.register(swaggerUi, swaggerUiOptions);
 
   server.decorate("authService", new AuthService(providers));
   server.decorate("tokenService", new TokenService(server.jwt));
