@@ -4,3 +4,4 @@ dist
 .angular
 angular-cli.md
 skills
+apps/api/private/*
