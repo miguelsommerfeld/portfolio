@@ -1,41 +1,18 @@
 import fastifyOauth2 from "@fastify/oauth2";
 import type { FastifyPluginAsyncZod } from "@fastify/type-provider-zod";
+import type { FastifyTypedInstance } from "@/types/fastify";
 import { z } from "zod";
 import { env } from "@shared/config/env";
-import {
-  authErrorResponseSchema,
-  authMeResponseSchema,
-  oauthCallbackQuerySchema,
-} from "@/modules/auth/auth.schema";
+import { authErrorResponseSchema, authMeResponseSchema, oauthCallbackQuerySchema, } from "@/modules/auth/auth.schema";
 import { authenticate } from "@/modules/auth/middlewares/auth.middleware";
-import {
-  AuthError,
-  type OAuthProvider,
-} from "@/modules/auth/providers/oauth-provider";
+import { AuthError, type OAuthProvider, toProviderResponse } from "@/modules/auth/providers/oauth-provider";
 import { SESSION_COOKIE_NAME } from "@/modules/auth/token.service";
-import type { FastifyTypedInstance } from "@/types/fastify";
 
 async function registerOAuthProviderRoutes(
   server: FastifyTypedInstance,
   provider: OAuthProvider,
 ): Promise<void> {
-  await server.register(fastifyOauth2, {
-    name: provider.oauth2PluginName,
-    scope: provider.scope,
-    credentials: provider.credentials,
-    startRedirectPath: `/${provider.name}`,
-    callbackUri: provider.callbackUri,
-    ...(provider.pkce ? { pkce: provider.pkce } : {}),
-    redirectStateCookieName: `oauth2-${provider.name}-state`,
-    verifierCookieName: `oauth2-${provider.name}-verifier`,
-    cookie: {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: env.NODE_ENV === "production",
-      path: "/",
-      signed: true,
-    },
-  });
+  await server.register(fastifyOauth2, toProviderResponse(provider));
 
   server.get(`/${provider.name}/callback`, {
     config: {
@@ -52,20 +29,12 @@ async function registerOAuthProviderRoutes(
     },
     handler: async (request, reply) => {
       if (request.query.error) {
-        const redirectUrl = server.authService.buildFrontendRedirectUrl(
-          env.FRONTEND_URL,
-          "/login",
-          "access_denied",
-        );
+        const redirectUrl = server.authService.buildFrontendRedirectUrl(env.FRONTEND_URL, "/login", "access_denied");
         return reply.redirect(redirectUrl);
       }
 
       if (!request.query.code || !request.query.state) {
-        const redirectUrl = server.authService.buildFrontendRedirectUrl(
-          env.FRONTEND_URL,
-          "/login",
-          "invalid_callback",
-        );
+        const redirectUrl = server.authService.buildFrontendRedirectUrl(env.FRONTEND_URL, "/login", "invalid_callback");
         return reply.redirect(redirectUrl);
       }
 
@@ -79,29 +48,14 @@ async function registerOAuthProviderRoutes(
           );
         }
 
-        const { token } =
-          await oauthClient.getAccessTokenFromAuthorizationCodeFlow(
-            request,
-            reply,
-          );
-
-        const user = await server.authService.authenticateWithProvider(
-          provider.name,
-          token.access_token,
-        );
-
+        const { token } = await oauthClient.getAccessTokenFromAuthorizationCodeFlow(request, reply);
+        const user = await server.authService.authenticateWithProvider(provider.name, token.access_token);
         const sessionToken = server.tokenService.createSessionToken(user);
 
-        reply.setCookie(
-          SESSION_COOKIE_NAME,
-          sessionToken,
-          server.tokenService.getSessionCookieOptions(),
-        );
+        reply.setCookie(SESSION_COOKIE_NAME, sessionToken, server.tokenService.getSessionCookieOptions());
 
-        const redirectUrl = server.authService.buildFrontendRedirectUrl(
-          env.FRONTEND_URL,
-          "/",
-        );
+        const redirectUrl = server.authService.buildFrontendRedirectUrl(env.FRONTEND_URL, "/");
+
         return reply.redirect(redirectUrl);
       } catch (err) {
         request.log.error(
@@ -109,14 +63,12 @@ async function registerOAuthProviderRoutes(
           "OAuth2 callback failed",
         );
 
-        const errorCode =
-          err instanceof AuthError ? err.code.toLowerCase() : "auth_failed";
+        const errorCode = err instanceof AuthError
+          ? err.code.toLowerCase()
+          : "auth_failed";
 
-        const redirectUrl = server.authService.buildFrontendRedirectUrl(
-          env.FRONTEND_URL,
-          "/login",
-          errorCode,
-        );
+        const redirectUrl = server.authService.buildFrontendRedirectUrl(env.FRONTEND_URL, "/login", errorCode);
+
         return reply.redirect(redirectUrl);
       }
     },
@@ -150,10 +102,7 @@ export const authRoutes: FastifyPluginAsyncZod = async function (
       },
     },
     handler: async (_request, reply) => {
-      reply.clearCookie(
-        SESSION_COOKIE_NAME,
-        server.tokenService.getClearCookieOptions(),
-      );
+      reply.clearCookie(SESSION_COOKIE_NAME, server.tokenService.getClearCookieOptions());
       return reply.status(204).send();
     },
   });
