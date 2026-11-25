@@ -9,6 +9,7 @@ import type { ZodTypeProvider } from "@fastify/type-provider-zod";
 import type { UserPayload } from "@shared/schemas/jwt.schema";
 import type { AuthService } from "@/modules/auth/auth.service";
 import type { TokenService } from "@/modules/auth/token.service";
+import type { ResumeService } from "@/modules/resume/resume.service";
 
 export type FastifyTypedInstance = FastifyInstance<
   RawServerDefault,
@@ -29,5 +30,6 @@ declare module "fastify" {
   interface FastifyInstance {
     authService: AuthService;
     tokenService: TokenService;
+    resumeService: ResumeService;
   }
 }
