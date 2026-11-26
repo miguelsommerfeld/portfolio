@@ -13,7 +13,8 @@ export class Navbar
 
   protected readonly isAuthenticated = this.authService.isAuthenticated;
   protected readonly isLoggingOut = this.authService.isLoggingOut;
-  protected readonly githubRepoUrl = 'https://github.com/miguelsommerfeld/portfolio';
+  protected readonly linkedinProfileUrl = 'https://www.linkedin.com/in/miguelsommerfeld/';
+  protected readonly githubProfileUrl = 'https://github.com/miguelsommerfeld';
 
   protected onLogout(): void
   {
