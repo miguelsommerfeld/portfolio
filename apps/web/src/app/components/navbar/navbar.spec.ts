@@ -38,15 +38,33 @@ describe('Navbar', () => {
     expect(compiled.querySelector('header nav')?.textContent).toContain('Miguel L. Sommerfeld');
   });
 
-  it('should render the GitHub repository link with icon image and security attributes', async () => {
+  it('should render the LinkedIn profile link to the left of the GitHub profile link with icon and security attributes', async () => {
     const fixture = TestBed.createComponent(Navbar);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    const githubLink = compiled.querySelector<HTMLAnchorElement>('a[aria-label="Repositório no GitHub"]');
+    const linkedinLink = compiled.querySelector<HTMLAnchorElement>('a[aria-label="Perfil no LinkedIn"]');
+    const linkedinIcon = linkedinLink?.querySelector<HTMLImageElement>('img');
+    const githubLink = compiled.querySelector<HTMLAnchorElement>('a[aria-label="Perfil no GitHub"]');
+
+    expect(linkedinLink).toBeTruthy();
+    expect(linkedinLink?.getAttribute('href')).toBe('https://www.linkedin.com/in/miguelsommerfeld/');
+    expect(linkedinLink?.getAttribute('target')).toBe('_blank');
+    expect(linkedinLink?.getAttribute('rel')).toBe('noopener noreferrer');
+    expect(linkedinIcon?.getAttribute('src')).toBe('/icons/linkedin.png');
+    expect(linkedinIcon?.getAttribute('aria-hidden')).toBe('true');
+    expect(githubLink).toBeTruthy();
+    expect(linkedinLink!.compareDocumentPosition(githubLink!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('should render the GitHub profile link with icon image and security attributes', async () => {
+    const fixture = TestBed.createComponent(Navbar);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const githubLink = compiled.querySelector<HTMLAnchorElement>('a[aria-label="Perfil no GitHub"]');
     const githubIcon = githubLink?.querySelector<HTMLImageElement>('img');
 
     expect(githubLink).toBeTruthy();
-    expect(githubLink?.getAttribute('href')).toBe('https://github.com/miguelsommerfeld/portfolio');
+    expect(githubLink?.getAttribute('href')).toBe('https://github.com/miguelsommerfeld');
     expect(githubLink?.getAttribute('target')).toBe('_blank');
     expect(githubLink?.getAttribute('rel')).toBe('noopener noreferrer');
     expect(githubIcon?.getAttribute('src')).toBe('/icons/github.png');
