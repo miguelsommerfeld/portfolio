@@ -9,7 +9,7 @@ export const HOME_PROJECTS: readonly ProjectShowcaseItem[] = [
   {
     id: 'portfolio-platform',
     category: 'Fullstack',
-    title: 'Portfolio Platform',
+    title: 'Portfolio',
     objective: 'Arquitetura fullstack stateless em monorepo combinando autenticação OAuth2 segura por cookies HttpOnly e interface interativa em dark mode.',
     deliverables: [
       'API Fastify v5 tipada de ponta a ponta com Zod v4 e JWT stateless',
@@ -23,7 +23,7 @@ export const HOME_PROJECTS: readonly ProjectShowcaseItem[] = [
         id: 'portfolio-architecture',
         title: 'Monorepo & Arquitetura Stateless',
         caption: 'Separação limpa entre apps/api, apps/web e schemas compartilhados sem dependência de banco de dados.',
-        imageAlt: 'Visão geral da arquitetura em monorepo da Portfolio Platform',
+        imageAlt: 'Visão geral da arquitetura em monorepo do Portfolio',
         accentGradient: 'radial-gradient(circle at 22% 24%, rgba(56, 189, 248, 0.42), rgba(15, 23, 42, 0.85) 58%, rgba(10, 10, 10, 0.96) 100%)',
       },
       {
@@ -44,7 +44,7 @@ export const HOME_PROJECTS: readonly ProjectShowcaseItem[] = [
         id: 'portfolio-deploy',
         title: 'Build Multi-Stage & Orquestração',
         caption: 'Containers otimizados via Docker Compose com validação automatizada em TypeScript e suíte Vitest.',
-        imageAlt: 'Pipeline de build e containers Docker da Portfolio Platform',
+        imageAlt: 'Pipeline de build e containers Docker do Portfolio',
         accentGradient: 'radial-gradient(circle at 30% 65%, rgba(251, 146, 60, 0.34), rgba(28, 20, 18, 0.88) 56%, rgba(10, 10, 10, 0.96) 100%)',
       },
     ],

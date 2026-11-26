@@ -100,7 +100,7 @@ describe('Home', () => {
     expect(showcases.length).toBe(3);
   });
 
-  it('should render the final liquid glass CTA link pointing to /curriculo', async () => {
+  it('should render the Resume component with the final CTA link pointing to /curriculo', async () => {
     const win = doc.defaultView!;
     Object.defineProperty(win, 'matchMedia', { value: createMatchMediaMock(true), configurable: true, writable: true });
 
@@ -108,11 +108,12 @@ describe('Home', () => {
     await fixture.whenStable();
 
     const compiled = fixture.nativeElement as HTMLElement;
+    const resume = compiled.querySelector('app-resume');
     const ctaLink = compiled.querySelector<HTMLAnchorElement>('a[href="/curriculo"]');
 
+    expect(resume).toBeTruthy();
     expect(ctaLink).toBeTruthy();
     expect(ctaLink?.textContent?.trim()).toBe('Acessar currículo');
     expect(ctaLink?.className).toContain('rounded-full');
-    expect(ctaLink?.className).toContain('backdrop-blur-xl');
   });
 });
