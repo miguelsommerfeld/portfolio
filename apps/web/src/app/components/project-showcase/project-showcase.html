@@ -1,0 +1,193 @@
+<section
+  #sectionRef
+  [attr.aria-labelledby]="'project-title-' + project().id"
+  class="relative flex min-h-screen w-full flex-col overflow-hidden bg-neutral-950 pt-14 lg:h-screen"
+>
+  <div aria-hidden="true" class="pointer-events-none absolute inset-0 select-none overflow-hidden">
+    @for (slide of project().slides; track slide.id; let i = $index) {
+      <div
+        class="absolute inset-0 transition-opacity duration-700 ease-out motion-reduce:transition-none"
+        [class.opacity-25]="i === activeSlideIndex()"
+        [class.opacity-0]="i !== activeSlideIndex()"
+      >
+        @if (hasValidImage(slide)) {
+          <img [src]="slide.imageUrl" alt="" class="h-full w-full scale-110 object-cover blur-3xl" />
+        } @else {
+          <div class="h-full w-full scale-110 blur-3xl" [style.background]="slideFallbackBackground(slide)"></div>
+        }
+      </div>
+    }
+
+    <div class="absolute inset-0 bg-neutral-950/75"></div>
+    <div class="absolute inset-0 bg-linear-to-b from-neutral-950 via-transparent to-neutral-950"></div>
+    <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_25%,rgba(10,10,10,0.82)_100%)]"></div>
+  </div>
+
+  <div #contentRef class="relative z-10 mx-auto flex w-full max-w-7xl flex-1 items-center px-5 py-8 sm:px-8 lg:px-12">
+    <div class="grid w-full grid-cols-1 items-center gap-8 lg:grid-cols-12 lg:gap-12">
+      <div class="flex min-w-0 flex-col gap-4 lg:col-span-5">
+        <div class="flex flex-col gap-1.5">
+          <p class="text-xs font-medium uppercase tracking-[0.2em] text-white/50">
+            {{ formattedProjectNumber() }} / {{ project().category }}
+          </p>
+          <h2 [id]="'project-title-' + project().id" class="text-2xl font-semibold tracking-tight text-white/95 sm:text-3xl lg:text-4xl">
+            {{ project().title }}
+          </h2>
+        </div>
+
+        <p class="text-xs leading-relaxed text-white/70 sm:text-sm">
+          {{ project().objective }}
+        </p>
+
+        @if (project().deliverables.length > 0) {
+          <ul class="space-y-1.5 text-xs text-white/80 sm:text-sm" aria-label="Entregas realizadas">
+            @for (deliverable of project().deliverables; track deliverable) {
+              <li class="flex items-start gap-2.5 leading-snug">
+                <span aria-hidden="true" class="mt-2 h-1 w-1 shrink-0 rounded-full bg-white/50"></span>
+                <span>{{ deliverable }}</span>
+              </li>
+            }
+          </ul>
+        }
+
+        @if (project().stacks.length > 0) {
+          <ul class="flex flex-wrap gap-1.5" aria-label="Tecnologias utilizadas">
+            @for (stack of project().stacks; track stack) {
+              <li class="rounded-full border border-white/10 bg-white/4 px-2.5 py-0.5 text-xs text-white/80">
+                {{ stack }}
+              </li>
+            }
+          </ul>
+        }
+
+        @if (project().repoUrl || project().liveUrl) {
+          <div class="flex flex-wrap items-center gap-4 text-xs text-white/65">
+            @if (project().repoUrl; as repoUrl) {
+              <a
+                [href]="repoUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex items-center gap-1 underline decoration-white/25 underline-offset-4 transition-colors hover:text-white hover:decoration-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+              >
+                repositório ↗
+              </a>
+            }
+            @if (project().liveUrl; as liveUrl) {
+              <a
+                [href]="liveUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex items-center gap-1 underline decoration-white/25 underline-offset-4 transition-colors hover:text-white hover:decoration-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+              >
+                demonstração ↗
+              </a>
+            }
+          </div>
+        }
+
+        @if (project().slides.length > 0) {
+          <ol class="mt-1 divide-y divide-white/10 border-t border-white/10" aria-label="Telas do projeto">
+            @for (slide of project().slides; track slide.id; let i = $index) {
+              <li>
+                <button
+                  type="button"
+                  (click)="selectSlide(i)"
+                  [attr.aria-current]="i === activeSlideIndex() ? 'step' : null"
+                  class="group flex w-full cursor-pointer items-start gap-3 py-2.5 text-left transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+                >
+                  <span
+                    class="mt-0.5 shrink-0 text-xs tabular-nums transition-colors duration-200"
+                    [class.text-white]="i === activeSlideIndex()"
+                    [class.text-white/35]="i !== activeSlideIndex()"
+                    [class.group-hover:text-white/70]="i !== activeSlideIndex()"
+                  >
+                    {{ formatIndex(i + 1) }}
+                  </span>
+
+                  <span class="min-w-0 flex-1">
+                    <span
+                      class="block text-xs font-medium transition-colors duration-200 sm:text-sm"
+                      [class.text-white]="i === activeSlideIndex()"
+                      [class.text-white/45]="i !== activeSlideIndex()"
+                      [class.group-hover:text-white/75]="i !== activeSlideIndex()"
+                    >
+                      {{ slide.title }}
+                    </span>
+
+                    @if (i === activeSlideIndex()) {
+                      <span class="mt-1 block text-xs leading-relaxed text-white/65">
+                        {{ slide.caption }}
+                      </span>
+                    }
+                  </span>
+                </button>
+              </li>
+            }
+          </ol>
+        }
+      </div>
+
+      <div class="min-w-0 lg:col-span-7">
+        <div
+          class="relative block aspect-16/10 w-full overflow-hidden rounded-2xl border border-white/12 bg-neutral-950/80 shadow-2xl shadow-black/60 sm:rounded-3xl"
+          data-testid="slide-frame"
+        >
+          @for (slide of project().slides; track slide.id; let i = $index) {
+            @if (i === activeSlideIndex()) {
+              <div
+                animate.enter="slide-enter"
+                animate.leave="slide-leave"
+                [attr.role]="hasValidImage(slide) ? null : 'img'"
+                [attr.aria-label]="hasValidImage(slide) ? null : slide.imageAlt"
+                class="absolute inset-0 flex flex-col justify-between overflow-hidden bg-neutral-950/85 p-6 sm:p-8"
+              >
+                <div aria-hidden="true" class="pointer-events-none absolute inset-0 opacity-80" [style.background]="slideFallbackBackground(slide)"></div>
+
+                @if (hasValidImage(slide)) {
+                  <img
+                    [src]="slide.imageUrl"
+                    [alt]="slide.imageAlt"
+                    (error)="onImageError(slide.id)"
+                    class="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-80"
+                  />
+                }
+
+                <div
+                  aria-hidden="true"
+                  class="pointer-events-none absolute inset-0 bg-linear-to-b from-white/8 via-neutral-950/20 to-neutral-950/90 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.14)]"
+                ></div>
+
+                <div class="relative z-10 flex items-center justify-between text-xs text-white/55">
+                  <span class="rounded-full border border-white/15 bg-neutral-950/45 px-3 py-1 backdrop-blur-md">
+                    {{ formattedProjectNumber() }}.{{ formatIndex(i + 1) }}
+                  </span>
+                  <span class="uppercase tracking-[0.18em] text-white/45">{{ project().category }}</span>
+                </div>
+
+                <div class="relative z-10 max-w-md space-y-2">
+                  <p class="text-lg font-semibold tracking-tight text-white/95 drop-shadow-sm sm:text-xl">
+                    {{ slide.title }}
+                  </p>
+                  <p class="text-xs leading-relaxed text-white/75 sm:text-sm">
+                    {{ slide.caption }}
+                  </p>
+                </div>
+              </div>
+            }
+          }
+        </div>
+
+        <div class="mt-3 flex items-center justify-between gap-4 px-1 text-xs">
+          @if (activeSlide(); as slide) {
+            <span class="truncate text-white/45">{{ slide.title }}</span>
+          } @else {
+            <span></span>
+          }
+          <span class="shrink-0 tabular-nums tracking-wider text-white/70" data-testid="slide-counter">
+            {{ formattedSlideCounter() }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

@@ -20,6 +20,22 @@ export class SmoothScrollService
 
   public readonly isActive = this._isActive.asReadonly();
 
+  public registerScrollTrigger(): boolean
+  {
+    const win = this.document.defaultView;
+
+    if (!win || typeof win.matchMedia !== 'function') {
+      return false;
+    }
+
+    if (!this.scrollTriggerRegistered) {
+      gsap.registerPlugin(ScrollTrigger);
+      this.scrollTriggerRegistered = true;
+    }
+
+    return true;
+  }
+
   public init(): void
   {
     const win = this.document.defaultView;
@@ -28,10 +44,7 @@ export class SmoothScrollService
       return;
     }
 
-    if (!this.scrollTriggerRegistered) {
-      gsap.registerPlugin(ScrollTrigger);
-      this.scrollTriggerRegistered = true;
-    }
+    this.registerScrollTrigger();
 
     const lenis = new Lenis({ lerp: 0.1, smoothWheel: true });
     lenis.on('scroll', ScrollTrigger.update);
@@ -76,7 +89,9 @@ export class SmoothScrollService
 
   public refresh(): void
   {
-    if (this.scrollTriggerRegistered) {
+    const win = this.document.defaultView;
+
+    if (this.scrollTriggerRegistered && win && typeof win.matchMedia === 'function') {
       ScrollTrigger.refresh();
     }
   }
