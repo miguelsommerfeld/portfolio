@@ -1,7 +1,7 @@
 import { DOCUMENT } from '@angular/common';
 import { Component, DestroyRef, ElementRef, afterNextRender, inject, signal, viewChild } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { ProjectShowcase } from '@components/project-showcase/project-showcase';
+import { Resume } from '@components/resume/resume';
 import { SmoothScrollService } from '@services/smooth-scroll.service';
 import gsap from 'gsap';
 import { HOME_PROJECTS } from './home.projects';
@@ -10,7 +10,7 @@ const HERO_WELCOME_TEXT = 'Seja bem-vindo(a) ao meu portfolio!';
 const TYPEWRITER_INTERVAL_MS = 55;
 
 @Component({
-  imports: [ProjectShowcase, RouterLink],
+  imports: [ProjectShowcase, Resume],
   selector: 'app-home',
   templateUrl: './home.html',
 })
@@ -26,8 +26,6 @@ export class Home
 
   protected readonly heroSectionRef = viewChild<ElementRef<HTMLElement>>('heroSectionRef');
   protected readonly heroContentRef = viewChild<ElementRef<HTMLElement>>('heroContentRef');
-  protected readonly ctaSectionRef = viewChild<ElementRef<HTMLElement>>('ctaSectionRef');
-  protected readonly ctaContentRef = viewChild<ElementRef<HTMLElement>>('ctaContentRef');
 
   protected readonly heroFullText = HERO_WELCOME_TEXT;
   protected readonly projects = HOME_PROJECTS;
@@ -81,8 +79,6 @@ export class Home
     const win = this.document.defaultView;
     const heroSection = this.heroSectionRef()?.nativeElement;
     const heroContent = this.heroContentRef()?.nativeElement;
-    const ctaSection = this.ctaSectionRef()?.nativeElement;
-    const ctaContent = this.ctaContentRef()?.nativeElement;
 
     if (!win || typeof win.matchMedia !== 'function' || !this.smoothScroll.registerScrollTrigger()) {
       return;
@@ -98,17 +94,6 @@ export class Home
             y: -40,
             ease: 'none',
             scrollTrigger: { trigger: heroSection, start: 'top top', end: 'bottom top', scrub: true },
-          });
-        }
-
-        if (ctaSection && ctaContent) {
-          gsap.from(ctaContent, {
-            opacity: 0,
-            y: 32,
-            scale: 0.96,
-            duration: 0.85,
-            ease: 'power3.out',
-            scrollTrigger: { trigger: ctaSection, start: 'top 78%', once: true },
           });
         }
       });

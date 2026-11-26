@@ -1,0 +1,80 @@
+<section
+  #sectionRef
+  aria-label="Acesso ao currículo"
+  class="relative w-full overflow-x-clip bg-neutral-950"
+  [class]="reducedMotion() ? 'min-h-screen' : 'min-h-[155vh] lg:min-h-[175vh]'"
+>
+  <div class="sticky top-0 flex h-svh w-full items-center justify-center overflow-hidden px-5 pt-16 pb-6 [perspective:1200px] sm:px-8 lg:px-12">
+    <div
+      #glowRef
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-0 select-none bg-[radial-gradient(circle_at_50%_55%,rgba(255,255,255,0.10),transparent_56%)]"
+    ></div>
+
+    <div
+      #sheetRef
+      data-testid="resume-sheet"
+      class="relative z-10 flex h-[min(70svh,520px)] max-w-[88vw] aspect-[210/297] flex-col justify-between overflow-hidden rounded-2xl bg-linear-to-b from-white via-neutral-50 to-neutral-100 ring-1 ring-black/10 shadow-[0_32px_90px_-16px_rgba(0,0,0,0.85),0_0_64px_-16px_rgba(255,255,255,0.14),inset_0_1px_0_0_rgba(255,255,255,0.95)] sm:h-[min(76svh,640px)] sm:rounded-[1.25rem]"
+    >
+      <header class="relative z-20 border-b border-neutral-200/80 px-6 pt-5 pb-3 text-center sm:px-8 sm:pt-7 sm:pb-4">
+        <h2 class="text-sm font-semibold tracking-tight text-neutral-800 sm:text-lg">Miguel L. Sommerfeld</h2>
+      </header>
+
+      <div
+        aria-hidden="true"
+        data-testid="resume-blurred-body"
+        class="pointer-events-none relative flex-1 overflow-hidden px-5 py-4 select-none sm:px-7 sm:py-5"
+      >
+        <div class="space-y-3 text-neutral-600 opacity-65 blur-[2.5px] sm:space-y-4 sm:blur-[3px]">
+          @for (block of previewSections; track block.heading) {
+            <div class="space-y-1.5">
+              <p class="border-b border-neutral-300/80 pb-0.5 text-[8px] font-semibold tracking-[0.18em] text-neutral-700 sm:text-[10px]">
+                {{ block.heading }}
+              </p>
+
+              @for (entry of block.entries; track entry.title) {
+                <div class="space-y-0.5">
+                  <p class="text-[9px] font-semibold text-neutral-800 sm:text-[11px]">{{ entry.title }}</p>
+                  <p class="text-[8px] text-neutral-500 sm:text-[9px]">{{ entry.subtitle }}</p>
+                  <p class="text-[8px] leading-relaxed text-neutral-600 sm:text-[9.5px]">{{ entry.summary }}</p>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_46%,rgba(255,255,255,0.86)_0%,rgba(255,255,255,0.34)_44%,rgba(255,255,255,0.08)_100%)]"></div>
+        <div class="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-linear-to-t from-white/95 via-white/60 to-transparent sm:h-40"></div>
+      </div>
+
+      <div
+        #questionMarkRef
+        aria-hidden="true"
+        data-testid="resume-question-mark"
+        class="pointer-events-none absolute inset-0 z-10 flex items-center justify-center pb-8 select-none"
+      >
+        <svg
+          viewBox="0 0 120 160"
+          fill="none"
+          class="h-36 w-auto text-neutral-700/90 drop-shadow-[0_14px_22px_rgba(0,0,0,0.30)] sm:h-48"
+        >
+          <path
+            d="M29 45C29 27 42.5 14 60.5 14C79.5 14 92 26 92 43C92 57 84.5 66 72.5 74C64 79.6 61.5 84.8 61.5 95V100H44.5V93.5C44.5 79 50.5 70.5 61 63C69.5 57 74 52.5 74 44.5C74 36.5 68.5 31 60.5 31C52 31 46.5 36.8 46.5 45H29Z"
+            fill="currentColor"
+          />
+          <circle cx="53" cy="129" r="11.5" fill="currentColor" />
+        </svg>
+      </div>
+
+      <div #ctaWrapRef class="relative z-20 flex justify-center px-5 pt-2 pb-6 sm:pb-8">
+        <a
+          routerLink="/curriculo"
+          (focus)="onCtaFocus()"
+          class="inline-flex items-center justify-center rounded-full bg-neutral-950/90 bg-linear-to-b from-neutral-700/90 via-neutral-900/95 to-neutral-950 px-7 py-3.5 text-sm font-medium tracking-tight text-white/95 ring-1 ring-inset ring-white/15 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.28),0_12px_30px_-6px_rgba(0,0,0,0.45)] origin-center transition-[transform,background-color,box-shadow,color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:scale-105 hover:from-neutral-700 hover:via-neutral-800 hover:to-neutral-950 hover:text-white hover:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.34),0_16px_34px_-6px_rgba(0,0,0,0.52)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white motion-reduce:transition-none motion-reduce:hover:scale-100 sm:text-base"
+        >
+          Acessar currículo
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
