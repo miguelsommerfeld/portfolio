@@ -1,0 +1,52 @@
+<main class="relative w-full bg-neutral-950 text-neutral-50">
+  <section
+    #heroSectionRef
+    aria-label="Boas-vindas"
+    class="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden bg-neutral-950 px-5 pt-14 sm:px-8 lg:px-12"
+  >
+    <div
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-0 select-none bg-[radial-gradient(circle_at_50%_42%,rgba(255,255,255,0.06),transparent_58%)]"
+    ></div>
+
+    <div #heroContentRef class="relative z-10 mx-auto max-w-4xl text-center">
+      <h1
+        [attr.aria-label]="heroFullText"
+        class="min-h-[1.35em] text-2xl font-semibold tracking-tight text-white/95 sm:text-4xl lg:text-5xl"
+      >
+        <span>{{ displayedHeroText() }}</span>
+        @if (!reducedMotion()) {
+          <span
+            aria-hidden="true"
+            class="ml-1 inline-block h-[1em] w-0.5 align-[-0.12em] bg-white/90"
+            [class.animate-cursor-blink]="!isTypingComplete()"
+            [class.animate-cursor-idle]="isTypingComplete()"
+          ></span>
+        }
+      </h1>
+    </div>
+
+    @if (isTypingComplete()) {
+      <div
+        aria-hidden="true"
+        animate.enter="fade-up-enter"
+        class="pointer-events-none absolute bottom-10 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2 text-xs tracking-[0.22em] text-white/40 uppercase select-none"
+      >
+        <span>scroll</span>
+        <svg viewBox="0 0 16 24" fill="none" class="h-5 w-3.5 text-white/45" aria-hidden="true">
+          <path d="M8 2V20M8 20L3 15M8 20L13 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </div>
+    }
+  </section>
+
+  @for (project of projects; track project.id; let i = $index) {
+    <app-project-showcase [project]="project" [projectIndex]="i" />
+  } @empty {
+    <section class="flex min-h-[50vh] w-full items-center justify-center bg-neutral-950 px-5 py-16 text-sm text-white/50">
+      Nenhum projeto disponível no momento.
+    </section>
+  }
+
+  <app-resume />
+</main>
