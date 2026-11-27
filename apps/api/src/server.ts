@@ -22,7 +22,7 @@ import type { FastifyTypedInstance } from "@/types/fastify";
 
 export async function buildServer(providers: readonly OAuthProvider[] = oauthProviders): Promise<FastifyTypedInstance> {
   const server = fastify({
-    logger: env.NODE_ENV !== "test",
+    logger: true,
   }).withTypeProvider<ZodTypeProvider>();
 
   server.setValidatorCompiler(validatorCompiler);

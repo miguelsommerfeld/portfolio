@@ -6,9 +6,11 @@ Este documento define as convenções, arquitetura e restrições específicas d
 
 ## 1. Stack e Ferramentas
 
-- **Framework:** Angular v22+ (Modern Angular).
+- **Framework:** Angular v22+ (Modern Angular — Standalone + Signals + View Transitions).
 - **Estilização:** Tailwind CSS v4 (`@tailwindcss/postcss`).
-- **Testes:** Vitest.
+- **Animações e Scroll:** Lenis + GSAP (`ScrollTrigger`) + `animate.enter` / `animate.leave` nativos.
+- **Testes:** Vitest + `jsdom`.
+- **Containerização:** Build multi-stage com Nginx 1.27 Alpine (`apps/web/nginx/`).
 - **Porta padrão:** `4200`.
 
 ---
@@ -17,30 +19,52 @@ Este documento define as convenções, arquitetura e restrições específicas d
 
 ```text
 apps/web/
+├── nginx/
+│   ├── default.conf.template            # Gzip, headers de segurança, cache e fallback SPA
+│   └── 40-generate-env-js.sh            # Gera /env.js em runtime a partir de API_BASE_URL
+├── scripts/
+│   └── run-ng.mts                       # Carrega .env da raiz e define __API_BASE_URL__
 ├── public/
-│   ├── favicon.ico
-│   └── fonts/
-│       └── JetBrainsMono-Medium.woff2   # Fonte padrão global da aplicação
+│   ├── env.js                           # Placeholder de runtime env em desenvolvimento
+│   ├── fonts/
+│   │   └── JetBrainsMono-Medium.woff2   # Fonte padrão global da aplicação
+│   ├── icons/                           # Ícones (github.png, google.png, linkedin.png)
+│   └── projects/                        # Capturas de tela dos projetos da vitrine
 └── src/
     ├── index.html
     ├── main.ts
-    ├── styles.css                       # @import 'tailwindcss', @font-face e tokens globais (@theme)
+    ├── styles.css                       # @import 'tailwindcss', @font-face, keyframes e View Transitions
     └── app/
         ├── core/                        # Infraestrutura global (singletons e configuração)
-        │   ├── config/                  # Configurações e constantes globais (ex.: URL base da API)
-        │   └── services/                # Serviços globais (ex.: auth.service.ts)
-        ├── components/                  # Componentes de UI reutilizáveis entre páginas
+        │   ├── config/
+        │   │   └── api.config.ts        # resolveApiBaseUrl() (runtime > build-time > fallback)
+        │   └── services/
+        │       ├── api-health.service.ts
+        │       ├── auth.service.ts
+        │       ├── error-feedback.service.ts
+        │       ├── resume.service.ts
+        │       └── smooth-scroll.service.ts
+        ├── components/                  # Componentes de UI reutilizáveis e modais globais
+        │   ├── auth-card/
+        │   ├── error-toast/
+        │   ├── navbar/
+        │   ├── project-showcase/
+        │   ├── resume/
+        │   ├── resume-card/
+        │   └── resume-code-card/
         ├── pages/                       # Páginas/rotas da aplicação (lazy-loaded)
         │   └── home/
+        │       ├── home.ts / home.html / home.spec.ts
+        │       └── home.projects.ts
         ├── app.ts                       # Componente raiz (shell da aplicação)
         ├── app.html
-        ├── app.css
         ├── app.config.ts                # Providers globais (router, HttpClient, appInitializer)
         ├── app.routes.ts                # Definição de rotas
         └── app.spec.ts
 ```
 
 - **Co-localização:** mantenha `.ts`, `.html` e `.spec.ts` juntos dentro da pasta do respectivo componente ou página (evite arquivos `.css` vazios quando Tailwind resolver o estilo).
+- **Path Aliases configurados em `apps/web/tsconfig.json`:** `@config/*`, `@services/*`, `@components/*`, `@pages/*`, `@public/*`.
 - **Novos recursos globais:** guards ou interceptors funcionais, quando necessários, devem ser adicionados dentro de `apps/web/src/app/core/`.
 
 ---
@@ -63,8 +87,8 @@ Antes de criar ou modificar qualquer página ou componente em `apps/web`, consul
    - Componentes, diretivas e pipes devem ser standalone e declarar suas dependências em `imports: [...]`.
 
 2. **Reatividade com Signals:**
-   - Dê preferência absoluta a **Signals** (`signal()`, `computed()`, `effect()`, `input()`, `output()`) para estado reativo e propriedades de componentes.
-   - Use RxJS apenas para fluxos assíncronos (como `HttpClient`), convertendo com `toSignal()` quando conveniente.
+   - Dê preferência absoluta a **Signals** (`signal()`, `computed()`, `effect()`, `input()`, `output()`, `viewChild()`) para estado reativo e propriedades de componentes.
+   - Use RxJS apenas para fluxos assíncronos (como `HttpClient` e eventos do `Router`), convertendo com `toSignal()` quando conveniente.
 
 3. **Novo Fluxo de Controle de Templates:**
    - Use `@if (...)`, `@else`, `@for (... of ...; track ...)` e `@switch`.
@@ -76,11 +100,12 @@ Antes de criar ou modificar qualquer página ou componente em `apps/web`, consul
 5. **Estilização e Tipografia Global:**
    - Utilize classes utilitárias do Tailwind CSS. Evite CSS customizado desnecessário em arquivos `.css` individuais.
    - **Fonte padrão:** toda a interface utiliza a fonte local **`JetBrains Mono`**, localizada em `apps/web/public/fonts/` (servida em runtime em `/fonts/JetBrainsMono-Medium.woff2`, pois `apps/web/public` é copiado como raiz de assets no `angular.json`).
-   - A declaração da fonte (`@font-face` com `format('woff2')`) e sua definição como fonte global (`@theme` do Tailwind v4 e/ou `body`) devem ficar centralizadas em `apps/web/src/styles.css`.
+   - A declaração da fonte (`@font-face` com `format('woff2')`) e sua definição como fonte global (`@theme` do Tailwind v4 e `body`) devem ficar centralizadas em `apps/web/src/styles.css`.
    - Não carregue fontes externas (ex.: Google Fonts CDN) nem sobrescreva `font-family` manualmente em componentes individuais.
 
 6. **Integração com a API:**
-   - Requisições autenticadas (ex.: `GET /auth/me`, `POST /auth/logout`) devem enviar `withCredentials: true` para transportar o cookie `HttpOnly`.
+   - Utilize `API_BASE_URL` de `@config/api.config`, resolvido na ordem `window.__ENV__.API_BASE_URL` (runtime `/env.js`) → `__API_BASE_URL__` (build-time via `scripts/run-ng.mts`) → `http://localhost:3333`.
+   - Requisições autenticadas (`GET /auth/me`, `POST /auth/logout`, `GET /resume`, `GET /resume/code`) devem enviar `withCredentials: true` para transportar o cookie `HttpOnly`.
    - *Atenção ao Docker:* `apps/web/Dockerfile` usa contexto `./apps/web` e não copia `shared/`. Considere isso antes de importar arquivos de `shared/` no frontend.
 
 ---

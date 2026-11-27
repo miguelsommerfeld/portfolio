@@ -10,7 +10,6 @@ import { SmoothScrollService } from '@services/smooth-scroll.service';
 @Component({
   imports: [Navbar, RouterOutlet, AuthCard, ResumeCard, ResumeCodeCard, ErrorToast],
   selector: 'app-root',
-  styleUrl: './app.css',
   templateUrl: './app.html',
 })
 export class App

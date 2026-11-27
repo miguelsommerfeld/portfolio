@@ -39,10 +39,12 @@ apps/api/src/
     │       ├── google.provider.ts       # Adaptador específico do Google OAuth2
     │       ├── github.provider.ts       # Adaptador específico do GitHub OAuth2
     │       └── index.ts                 # Registro central dos provedores ativos (oauthProviders)
+    ├── health/
+    │   └── health.routes.ts             # Probe de disponibilidade GET /health (sem rate limit)
     └── resume/
         ├── resume.routes.ts             # Rotas de entrega controlada de currículo em PDF
         ├── resume.schema.ts             # Schemas Zod do módulo resume
-        └── resume.service.ts            # Regras de negócio do módulo resume
+        └── resume.service.ts            # Regras de negócio do módulo resume (HMAC-SHA256)
 ```
 
 ---
@@ -53,6 +55,7 @@ apps/api/src/
    - A sessão é 100% stateless via JWT assinado armazenado no cookie `HttpOnly` chamado `access_token`.
    - **Não implemente refresh tokens** nem persistência de sessão em banco. O tempo de vida da sessão é controlado por `JWT_EXPIRES_IN` (com `maxAge` do cookie sincronizado em `TokenService`).
    - A validação em rotas protegidas usa `authenticate` (`preHandler`) com `request.jwtVerify({ onlyCookie: true })` e validação do payload via `userPayloadSchema`.
+   - `GET /auth/me` retorna `{ user, canAccessResumeCode }` indicando se o usuário autenticado é owner (`server.resumeService.isOwner(request.user)`).
    - Logout é sempre via `POST /auth/logout` (nunca `GET`) limpando o cookie com os mesmos atributos (`httpOnly`, `sameSite`, `secure`, `path`).
 
 2. **Padrão Extensível de Provedores OAuth2 (`providers/`):**
@@ -73,8 +76,8 @@ apps/api/src/
 ## 4. Convenções Gerais na API
 
 1. **Bootstrap (`server.ts`):**
-   - Mantenha a criação do servidor isolada em `buildServer()` e chame `server.listen()` apenas quando o arquivo for o entrypoint principal. Isso permite testar a aplicação diretamente com `server.inject()`.
-   - Preserve a ordem de registro de plugins: `cors` (`credentials: true` e origem normalizada via `new URL(env.FRONTEND_URL).origin`) → `cookie` → `rate-limit` → `jwt` → `swagger` → `swaggerUi` → `decorate(...)` → rotas com prefixo.
+   - Mantenha a criação do servidor isolada em `buildServer()` e chame `server.listen()` apenas quando o arquivo for o entrypoint principal, separando claramente a composição de plugins/rotas da inicialização da porta HTTP.
+   - Preserve a ordem de registro de plugins: `cors` (`credentials: true`, origem normalizada via `new URL(env.FRONTEND_URL).origin` e `exposedHeaders: ["Content-Disposition", "X-Resume-Variant"]`) → `cookie` → `rate-limit` → `jwt` → `swagger` → `swaggerUi` → `decorate(...)` → rotas com prefixo (`/health`, `/auth`, `/resume`).
 
 2. **Rotas e Schemas (`*.routes.ts` e `*.schema.ts`):**
    - Use sempre `FastifyPluginAsyncZod` e `FastifyTypedInstance`.

@@ -15,7 +15,7 @@ const ownerEmailsSchema = z
   .pipe(z.array(z.email()).min(1));
 
 const envSchema = z.object({
-  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  NODE_ENV: z.enum(["development", "production"]).default("development"),
   PORT: z.coerce.number().int().positive().default(3333),
   FRONTEND_URL: z.url().default("http://localhost:4200"),
   GOOGLE_CLIENT_ID: z.string().min(1),
