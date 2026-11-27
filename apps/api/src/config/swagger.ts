@@ -13,6 +13,7 @@ export const swaggerOptions: FastifyDynamicSwaggerOptions = {
       version: "1.0.0",
     },
     tags: [
+      { name: "Health", description: "Service availability and health probes." },
       { name: "Auth", description: "Stateless OAuth2 authentication and JWT session management." },
       { name: "Resume", description: "Authenticated resume PDF delivery and daily access code generation." },
     ],
@@ -33,10 +34,7 @@ export const swaggerOptions: FastifyDynamicSwaggerOptions = {
       `${SWAGGER_ROUTE_PREFIX}/`,
       `${SWAGGER_ROUTE_PREFIX}/json`,
       `${SWAGGER_ROUTE_PREFIX}/yaml`,
-      `${SWAGGER_ROUTE_PREFIX}/uiConfig`,
-      `${SWAGGER_ROUTE_PREFIX}/initOAuth`,
       `${SWAGGER_ROUTE_PREFIX}/static/*`,
-      `${SWAGGER_ROUTE_PREFIX}/*`,
     ],
   }),
   transformObject: jsonSchemaTransformObject,

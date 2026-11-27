@@ -10,7 +10,6 @@
     "clear": "rm -rf node_modules && rm -rf package-lock.json && rm -rf apps/**/node_modules && rm -rf apps/**/package-lock.json"
   },
   "dependencies": {
-    "serve": "^14.2.8",
     "zod": "^4.6.7"
   },
   "devDependencies": {

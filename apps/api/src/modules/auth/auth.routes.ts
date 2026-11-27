@@ -95,15 +95,18 @@ export const authRoutes: FastifyPluginAsyncZod = async function (server: Fastify
     schema: {
       tags: ["Auth"],
       summary: "Get authenticated user",
-      description: `Returns the authenticated user profile decoded from the stateless "${SESSION_COOKIE_NAME}" HttpOnly JWT cookie.`,
+      description: `Returns the authenticated user profile decoded from the stateless "${SESSION_COOKIE_NAME}" HttpOnly JWT cookie and whether the user can access the daily resume code.`,
       security: [{ cookieAuth: [] }],
       response: {
-        200: authMeResponseSchema.describe("Authenticated user profile."),
+        200: authMeResponseSchema.describe("Authenticated user profile and resume code access permission."),
         401: authErrorResponseSchema.describe("Missing, expired, or invalid authentication cookie."),
       },
     },
     handler: async (request, reply) => {
-      return reply.status(200).send({ user: request.user });
+      return reply.status(200).send({
+        user: request.user,
+        canAccessResumeCode: server.resumeService.isOwner(request.user),
+      });
     },
   });
 

@@ -1,0 +1,120 @@
+@if (isOpen()) {
+  <div
+    animate.enter="auth-backdrop-enter"
+    animate.leave="auth-backdrop-leave"
+    data-lenis-prevent
+    data-testid="resume-code-card-backdrop"
+    (click)="onBackdropClick($event)"
+    (wheel)="onPreventBackgroundScroll($event)"
+    (touchmove)="onPreventBackgroundScroll($event)"
+    class="fixed inset-0 z-60 flex items-center justify-center overscroll-contain bg-neutral-950/60 p-4 backdrop-blur-sm sm:p-6"
+  >
+    <div
+      animate.enter="auth-card-enter"
+      animate.leave="auth-card-leave"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="resume-code-card-title"
+      data-testid="resume-code-card"
+      class="relative w-full max-w-sm overflow-hidden rounded-3xl border border-white/15 bg-neutral-950/55 bg-linear-to-b from-white/10 to-white/3 p-6 backdrop-blur-2xl backdrop-saturate-150 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.16),0_24px_64px_-12px_rgba(0,0,0,0.75)] sm:p-7"
+    >
+      <div class="flex items-start justify-between gap-4">
+        <div class="space-y-1">
+          <h2 id="resume-code-card-title" class="text-lg font-semibold tracking-tight text-white/95">
+            Código do currículo
+          </h2>
+          <p class="text-xs leading-relaxed text-white/60">
+            Acesso diário ao currículo completo
+          </p>
+        </div>
+
+        <button
+          #closeButtonRef
+          type="button"
+          aria-label="Fechar código do currículo"
+          (click)="onClose()"
+          class="inline-flex shrink-0 cursor-pointer items-center justify-center rounded-full p-1.5 text-white/60 transition-colors duration-200 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 motion-reduce:transition-none"
+        >
+          <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" class="h-4 w-4">
+            <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
+          </svg>
+        </button>
+      </div>
+
+      @if (isLoading()) {
+        <div role="status" class="mt-6 rounded-2xl border border-white/10 bg-white/4 px-4 py-6 text-center text-xs text-white/65">
+          Carregando código diário...
+        </div>
+      } @else if (codeData(); as data) {
+        <div animate.enter="fade-up-enter" class="mt-6 flex flex-col gap-3.5">
+          <div class="rounded-2xl border border-white/15 bg-white/6 px-4 py-4 text-center shadow-[inset_0_1px_0_0_rgba(255,255,255,0.10)]">
+            <span class="block text-[11px] uppercase tracking-[0.18em] text-white/50">
+              Código de hoje
+            </span>
+            <span
+              data-testid="resume-code-value"
+              class="mt-1.5 block text-2xl font-semibold tracking-[0.22em] text-white select-text"
+            >
+              {{ data.code }}
+            </span>
+          </div>
+
+          <dl class="space-y-2 rounded-2xl border border-white/10 bg-white/4 px-4 py-3 text-xs">
+            <div class="flex items-center justify-between gap-3">
+              <dt class="text-white/55">Válido para</dt>
+              <dd data-testid="resume-code-valid-date" class="font-medium text-white/90">
+                {{ formattedValidForDate() }}
+              </dd>
+            </div>
+            <div class="flex items-center justify-between gap-3">
+              <dt class="text-white/55">Expira em</dt>
+              <dd data-testid="resume-code-expires-at" class="font-medium text-white/90">
+                {{ formattedExpiresAt() }}
+              </dd>
+            </div>
+          </dl>
+
+          <button
+            type="button"
+            (click)="onCopyCode()"
+            class="group flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/12 px-4 py-3 text-sm font-medium text-white/95 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.16)] origin-center transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform hover:scale-[1.02] hover:border-white/30 hover:bg-white/18 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 motion-reduce:transition-none motion-reduce:hover:scale-100"
+          >
+            @if (isCopied()) {
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" class="h-4 w-4 text-emerald-300">
+                <path d="M4.5 10.5l3.5 3.5 7.5-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <span>Código copiado!</span>
+            } @else {
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" class="h-4 w-4 text-white/75 transition-colors group-hover:text-white">
+                <rect x="7" y="7" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.6" />
+                <path d="M5 13H4.5A1.5 1.5 0 0 1 3 11.5v-7A1.5 1.5 0 0 1 4.5 3h7A1.5 1.5 0 0 1 13 4.5V5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+              </svg>
+              <span>Copiar código</span>
+            }
+          </button>
+        </div>
+      }
+
+      @if (errorMessage(); as error) {
+        <p
+          animate.enter="toast-enter"
+          animate.leave="toast-leave"
+          role="alert"
+          class="mt-4 rounded-xl border border-red-400/25 bg-red-500/10 px-3.5 py-2.5 text-xs leading-relaxed text-red-200"
+        >
+          {{ error }}
+        </p>
+
+        @if (!codeData() && !isLoading()) {
+          <button
+            type="button"
+            (click)="onRetry()"
+            class="mt-3 flex w-full cursor-pointer items-center justify-center rounded-2xl border border-white/15 bg-white/6 px-4 py-2.5 text-xs font-medium text-white/85 transition-colors duration-200 hover:bg-white/12 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 motion-reduce:transition-none"
+          >
+            Tentar novamente
+          </button>
+        }
+      }
+    </div>
+  </div>
+}

@@ -15,13 +15,14 @@ import { AuthService } from "@/modules/auth/auth.service";
 import { oauthProviders } from "@/modules/auth/providers/index";
 import type { OAuthProvider } from "@/modules/auth/providers/oauth-provider";
 import { SESSION_COOKIE_NAME, TokenService } from "@/modules/auth/token.service";
+import { healthRoutes } from "@/modules/health/health.routes";
 import { resumeRoutes } from "@/modules/resume/resume.routes";
 import { ResumeService } from "@/modules/resume/resume.service";
 import type { FastifyTypedInstance } from "@/types/fastify";
 
 export async function buildServer(providers: readonly OAuthProvider[] = oauthProviders): Promise<FastifyTypedInstance> {
   const server = fastify({
-    logger: env.NODE_ENV !== "test",
+    logger: true,
   }).withTypeProvider<ZodTypeProvider>();
 
   server.setValidatorCompiler(validatorCompiler);
@@ -63,6 +64,7 @@ export async function buildServer(providers: readonly OAuthProvider[] = oauthPro
   server.decorate("tokenService", new TokenService(server.jwt));
   server.decorate("resumeService", new ResumeService());
 
+  await server.register(healthRoutes, { prefix: "/health" });
   await server.register(authRoutes, { prefix: "/auth" });
   await server.register(resumeRoutes, { prefix: "/resume" });
 

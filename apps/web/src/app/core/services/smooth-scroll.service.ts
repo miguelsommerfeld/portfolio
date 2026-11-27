@@ -87,6 +87,14 @@ export class SmoothScrollService
     element?.scrollIntoView({ behavior: options?.immediate ? 'instant' : 'smooth' });
   }
 
+  public cancelMomentum(): void
+  {
+    const win = this.document.defaultView;
+    if (this.lenis && win) {
+      this.lenis.scrollTo(win.scrollY, { immediate: true });
+    }
+  }
+
   public refresh(): void
   {
     const win = this.document.defaultView;
