@@ -1,69 +1,55 @@
-# Especificação do Componente: AuthCard e ResumeCard (Autenticação OAuth2 e Acesso ao Currículo)
+# Especificação dos Componentes: Modais de Autenticação, Currículo e Feedback
 
-Este documento define o plano e os requisitos visuais, estruturais, comportamentais e técnicos do componente **AuthCard** (`app-auth-card`) e do card complementar **ResumeCard** (`app-resume-card`), responsáveis respectivamente pela autenticação OAuth2 (**Google** ou **GitHub**) e pela seleção da variante do currículo (**com dados sensíveis** mediante código de 8 caracteres ou **sem dados sensíveis**) no frontend (`apps/web`).
+Este documento descreve os requisitos visuais, estruturais, comportamentais e técnicos dos modais globais (**`AuthCard`**, **`ResumeCard`**, **`ResumeCodeCard`**) e do toast de erro (**`ErrorToast`**) no frontend (`apps/web`), alinhados ao estado atual da aplicação.
 
-> **Obrigatório:** Qualquer agente responsável por implementar esta feature **DEVE** seguir integralmente todas as diretrizes de [`AGENTS.md`](../../../AGENTS.md) e [`.agent/rules/web.md`](../../rules/web.md), mantendo coerência visual e arquitetural com [`navbar.md`](./navbar.md) e [`resume.md`](./resume.md).
+> **Obrigatório:** Qualquer alteração nestes componentes **DEVE** seguir [`AGENTS.md`](../../../AGENTS.md), [`.agent/rules/web.md`](../../rules/web.md), [`navbar.md`](./navbar.md) e [`resume.md`](./resume.md).
 
 ---
 
-## 1. Visão Geral e Fluxo de Uso
+## 1. Visão Geral e Fluxo Integrado
 
-- **Papel:**
-  - **`AuthCard` (`app-auth-card`):** card modal minimalista centralizado na viewport, oferecendo exclusivamente **Google** e **GitHub**.
-  - **`ResumeCard` (`app-resume-card`):** card modal na mesma estética *liquid glass*, oferecendo **Currículo com dados sensíveis** (exigindo o código diário de 8 caracteres) ou **Currículo sem dados sensíveis**.
-- **Renderização global:** ambos são montados no shell raiz (`apps/web/src/app/app.html`) ao lado de `<app-navbar />` e `<router-outlet />`, garantindo disponibilidade imediata em qualquer rota.
-- **Gatilhos e fluxo integrado:**
-  1. **Navbar (`apps/web/src/app/components/navbar/navbar.html`):** quando `!isAuthenticated()`, clicar em **`Auth`** limpa eventual intenção pendente de currículo e abre o `AuthCard`.
-  2. **Resume (`apps/web/src/app/components/resume/resume.html`):** o botão **`Acessar currículo`** não usa `@if / @else` local de autenticação; ao clicar, chama `ResumeService.requestResumeAccess()` validando a sessão no middleware da API (`GET /auth/me` com `withCredentials: true`):
-     - **`401 UNAUTHORIZED`:** grava a intenção não-sensível `portfolio:post_auth_action = 'open_resume'` em `sessionStorage` e abre o `AuthCard`.
-     - **`200 OK`:** abre o `ResumeCard` para escolha da versão do currículo.
-  3. **Retorno pós-OAuth2:** ao voltar para `/` após autenticação bem-sucedida, `AuthService.checkSession()` consome a flag de `sessionStorage` e aciona a abertura automática do `ResumeCard` no centro da tela (sem exigir scroll até o fim da página).
-  4. **Download no `ResumeCard`:**
-     - **Currículo sem dados sensíveis:** dispara `GET ${API_BASE_URL}/resume` (`withCredentials: true`, `responseType: 'blob'`) sem header `x-resume-code` → abre o PDF (`200 OK`).
-     - **Currículo com dados sensíveis:** exibe campo de código de 8 caracteres (`XXXX-XXXX`) e dispara `GET ${API_BASE_URL}/resume` com header `x-resume-code` → abre o PDF (`200 OK`), exibe erro inline em `403`/`503` ou reabre `AuthCard` com intenção pós-login em `401`.
-- **Formas de fechamento:** botão `×`, clique no backdrop ou tecla `Escape` (sem alterar `overflow` no `<body>`/`<html>`, preservando o `position: sticky` da página).
+- **Papel de cada componente (montados no shell raiz `apps/web/src/app/app.html`):**
+  - **`AuthCard` (`app-auth-card`):** modal *liquid glass* para autenticação OAuth2 com **Google** ou **GitHub**, com pré-verificação de disponibilidade da API via `ApiHealthService` (`GET /health`).
+  - **`ResumeCard` (`app-resume-card`):** modal *liquid glass* em duas etapas para escolher entre **Currículo com dados sensíveis** (código diário `XXXX-XXXX`) ou **Currículo sem dados sensíveis**.
+  - **`ResumeCodeCard` (`app-resume-code-card`):** modal exclusivo para owners autenticados (`canAccessResumeCode()`), consultando `GET /resume/code` para exibir o código diário, data de validade, expiração formatada em `pt-BR` e ação de copiar para a área de transferência.
+  - **`ErrorToast` (`app-error-toast`):** aviso global (`role="alert"`, `aria-live="assertive"`) gerenciado por `ErrorFeedbackService` com descarte manual e automático (`6s`).
+- **Fluxo integrado:**
+  1. **Navbar (`Auth` / `Code` / `Logout`):** clicar em `Auth` limpa intenção pendente de currículo e abre `AuthCard`; owners autenticados veem o botão `Code`, que abre `ResumeCodeCard`.
+  2. **Resume (`Acessar currículo`):** chama `ResumeService.requestResumeAccess()`, validando a sessão via `GET /auth/me` (`withCredentials: true`):
+     - **`200 OK`:** abre `ResumeCard`.
+     - **`401 Unauthorized`:** grava `portfolio:post_auth_action = 'open_resume'` em `sessionStorage` e abre `AuthCard`.
+     - **Outros erros:** exibe mensagem amigável via `ErrorFeedbackService` (`ErrorToast`).
+  3. **Healthcheck pré-OAuth2 no `AuthCard`:** ao escolher Google ou GitHub, consulta `GET /health` via `ApiHealthService`; só redireciona para `${API_BASE_URL}/auth/:provider` quando a API responde `{ status: "ok" }`, exibindo erro inline caso contrário.
+  4. **Retorno pós-OAuth2:**
+     - Em sucesso (`/`), `AuthService.checkSession()` consome a flag de `sessionStorage` e aciona a abertura automática do `ResumeCard`.
+     - Em erro (`/login?error=...`), `app.routes.ts` fecha o `AuthCard`, aciona `ErrorFeedbackService.showGenericError()` e redireciona para `/`.
+  5. **Download no `ResumeCard`:**
+     - **Sem dados sensíveis:** `GET ${API_BASE_URL}/resume` (`withCredentials: true`, `responseType: 'blob'`) → abre PDF em nova aba (`URL.createObjectURL`, com fallback de clique em `<a>` e revogação após `60s`).
+     - **Com dados sensíveis:** envia o código de 8 caracteres no header `x-resume-code` → abre PDF em `200 OK`, exibe erro inline em `403` (*Código inválido ou expirado*) ou erro genérico, e reabre `AuthCard` com intenção pós-login em `401`.
+  6. **Consulta no `ResumeCodeCard`:** ao abrir, consulta `GET ${API_BASE_URL}/resume/code` (`withCredentials: true`). Em `401`, solicita nova autenticação; em `403`, revoga `canAccessResumeCode` no cliente e exibe feedback via `ErrorToast`.
+- **Fechamento dos modais:** botão `×`, clique no backdrop ou tecla `Escape` (sem alterar `overflow` de `body`/`html`, preservando `position: sticky`).
 
 ---
 
 ## 2. Direção Visual — Liquid Glass (Dark Mode Fixo)
 
-O portfólio adota **Dark mode fixo** com acabamento **liquid glass** consistente com `app-navbar`:
-
-- **Overlay / Backdrop (centralização na viewport):**
-  - `fixed inset-0 z-60 flex items-center justify-center overscroll-contain bg-neutral-950/60 p-4 backdrop-blur-sm sm:p-6` com `data-lenis-prevent` e bloqueio de `wheel`/`touchmove` no backdrop (evitando mexer no `overflow` do `body`/`html` e mantendo `position: sticky` intacto).
-- **Card Central (Liquid Glass com bordas arredondadas):**
-  - `relative w-full max-w-sm overflow-hidden rounded-3xl border border-white/15 bg-neutral-950/55 bg-linear-to-b from-white/10 to-white/3 p-6 backdrop-blur-2xl backdrop-saturate-150 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.16),0_24px_64px_-12px_rgba(0,0,0,0.75)] sm:p-7`.
-- **Tipografia e Estilização:** exclusivamente `JetBrains Mono` global e classes Tailwind CSS v4 (keyframes compartilhados em `apps/web/src/styles.css`, liberando `user-select: text` em `input, textarea`).
+- **Backdrop:** `fixed inset-0 z-60 flex items-center justify-center overscroll-contain bg-neutral-950/60 p-4 backdrop-blur-sm sm:p-6` com `data-lenis-prevent` e bloqueio de `wheel`/`touchmove`.
+- **Card modal:** `relative w-full max-w-sm overflow-hidden rounded-3xl border border-white/15 bg-neutral-950/55 bg-linear-to-b from-white/10 to-white/3 p-6 backdrop-blur-2xl backdrop-saturate-150 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.16),0_24px_64px_-12px_rgba(0,0,0,0.75)] sm:p-7`.
+- **ErrorToast:** posicionado em `fixed bottom-5 z-70` com acabamento translúcido avermelhado (`border-red-400/25 bg-neutral-950/75 backdrop-blur-2xl`).
+- **Tipografia e Estilização:** exclusivamente `JetBrains Mono` global e classes Tailwind CSS v4 (keyframes em `apps/web/src/styles.css`, liberando `user-select: text` em `input, textarea` e no valor do código em `ResumeCodeCard`).
 
 ---
 
-## 3. Conteúdo dos Cards
+## 3. Transições, Scroll e Acessibilidade
 
-### 3.1. `AuthCard` (`app-auth-card`)
-
-- Cabeçalho: título **`Entrar`**, subtítulo `Escolha um provedor para continuar` e botão fechar (`×`).
-- Opções nativas `<a>` para navegação top-level OAuth2:
-  1. **Google:** `/icons/google.png` (sem `invert`), rótulo `Continuar com Google`, `href="${API_BASE_URL}/auth/google"`.
-  2. **GitHub:** `/icons/github.png` (com `invert`), rótulo `Continuar com GitHub`, `href="${API_BASE_URL}/auth/github"`.
-
-### 3.2. `ResumeCard` (`app-resume-card`)
-
-- Cabeçalho: título **`Acessar currículo`**, subtítulo contextual por etapa e botão fechar (`×`).
-- **Etapa 1 (`options`):** dois botões *liquid glass*: **`Currículo com dados sensíveis`** e **`Currículo sem dados sensíveis`**.
-- **Etapa 2 (`code`):** formulário com `<input>` formatado em `XXXX-XXXX` (8 caracteres alfanuméricos maiúsculos), botões **`Voltar`** e **`Abrir currículo`** (habilitado com 8 caracteres), e feedback inline `role="alert"` para `403` (*Código inválido ou expirado*) e `503`.
+- Entrada e saída com `animate.enter` / `animate.leave` (`.auth-backdrop-enter`, `.auth-backdrop-leave`, `.auth-card-enter`, `.auth-card-leave`, `.fade-up-enter`, `.toast-enter`, `.toast-leave`), respeitando `@media (prefers-reduced-motion: reduce)`.
+- `SmoothScrollService.cancelMomentum()` congela a inércia do Lenis ao abrir qualquer modal sem adicionar `.lenis-stopped { overflow: clip; }`.
+- Foco inicial e restauração de foco usam `.focus({ preventScroll: true })`; assinaturas HTTP em andamento e timers são cancelados ao fechar ou destruir o componente.
+- Diálogos semânticos com `role="dialog"`, `aria-modal="true"` e `aria-labelledby`.
 
 ---
 
-## 4. Transições, Scroll e Acessibilidade
-
-- Entrada e saída com `animate.enter` / `animate.leave` (`.auth-backdrop-enter`, `.auth-backdrop-leave`, `.auth-card-enter`, `.auth-card-leave`, `.fade-up-enter`) em `apps/web/src/styles.css`, respeitando `@media (prefers-reduced-motion: reduce)`.
-- `SmoothScrollService.cancelMomentum()` congela a inércia do Lenis na posição atual sem adicionar `.lenis-stopped { overflow: clip; }`.
-- `Resume.onCtaFocus($event)` só rola quando `:focus-visible` está ativo (foco via teclado), nunca em cliques de mouse; modais usam `.focus({ preventScroll: true })` ao abrir e ao restaurar foco.
-- Diálogos semânticos com `role="dialog"`, `aria-modal="true"`, `aria-labelledby`, fechamento por `Escape`/backdrop e cancelamento de downloads em andamento ao fechar.
-
----
-
-## 5. Validação
+## 4. Validação
 
 Executar em `apps/web`:
 
@@ -71,3 +57,5 @@ Executar em `apps/web`:
 npm run build
 npm test
 ```
+
+Testes unitários em `auth-card.spec.ts`, `resume-card.spec.ts`, `resume-code-card.spec.ts`, `error-toast.spec.ts`, `api-health.service.spec.ts`, `auth.service.spec.ts`, `resume.service.spec.ts` e `error-feedback.service.spec.ts`.
