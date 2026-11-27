@@ -1,7 +1,10 @@
 import { DOCUMENT } from '@angular/common';
-import { Component, DestroyRef, ElementRef, effect, inject, viewChild } from '@angular/core';
-import { AuthService } from '@services/auth.service';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Component, DestroyRef, ElementRef, effect, inject, signal, viewChild } from '@angular/core';
+import { AuthService, type AuthProvider } from '@services/auth.service';
+import { GENERIC_API_ERROR_MESSAGE } from '@services/error-feedback.service';
 import { SmoothScrollService } from '@services/smooth-scroll.service';
+import { type Subscription, finalize } from 'rxjs';
 
 @Component({
   host: { '(document:keydown.escape)': 'onEscape()' },
@@ -17,9 +20,12 @@ export class AuthCard
 
   private isTrackingOpen = false;
   private previousActiveElement: HTMLElement | null = null;
+  private connectSubscription: Subscription | null = null;
 
   protected readonly closeButtonRef = viewChild<ElementRef<HTMLButtonElement>>('closeButtonRef');
   protected readonly isOpen = this.authService.isAuthCardOpen;
+  protected readonly isConnecting = signal(false);
+  protected readonly errorMessage = signal<string | null>(null);
   protected readonly googleAuthUrl = this.authService.getOAuthUrl('google');
   protected readonly githubAuthUrl = this.authService.getOAuthUrl('github');
 
@@ -41,6 +47,38 @@ export class AuthCard
     });
 
     this.destroyRef.onDestroy(() => this.onClosed(false));
+  }
+
+  protected onSelectProvider(event: MouseEvent, provider: AuthProvider): void
+  {
+    event.preventDefault();
+
+    if (this.isConnecting()) {
+      return;
+    }
+
+    this.isConnecting.set(true);
+    this.errorMessage.set(null);
+
+    this.connectSubscription = this.authService
+      .verifySession()
+      .pipe(
+        finalize(() => {
+          this.isConnecting.set(false);
+          this.connectSubscription = null;
+        }),
+      )
+      .subscribe({
+        next: () => this.authService.activatePendingResumeIfSaved(),
+        error: (error: unknown) => {
+          if (error instanceof HttpErrorResponse && error.status === 401) {
+            this.authService.redirectToOAuth(provider);
+            return;
+          }
+
+          this.errorMessage.set(GENERIC_API_ERROR_MESSAGE);
+        },
+      });
   }
 
   protected onClose(): void
@@ -81,6 +119,9 @@ export class AuthCard
 
   private onClosed(restoreFocus = true): void
   {
+    this.cancelConnectionCheck();
+    this.errorMessage.set(null);
+
     if (!this.isTrackingOpen) {
       return;
     }
@@ -92,5 +133,15 @@ export class AuthCard
     }
 
     this.previousActiveElement = null;
+  }
+
+  private cancelConnectionCheck(): void
+  {
+    if (this.connectSubscription) {
+      this.connectSubscription.unsubscribe();
+      this.connectSubscription = null;
+    }
+
+    this.isConnecting.set(false);
   }
 }

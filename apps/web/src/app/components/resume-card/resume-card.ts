@@ -2,6 +2,7 @@ import { DOCUMENT } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, ElementRef, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { AuthService } from '@services/auth.service';
+import { GENERIC_API_ERROR_MESSAGE } from '@services/error-feedback.service';
 import { ResumeService } from '@services/resume.service';
 import { SmoothScrollService } from '@services/smooth-scroll.service';
 import { type Subscription, finalize } from 'rxjs';
@@ -196,7 +197,7 @@ export class ResumeCard
       }
     }
 
-    this.errorMessage.set('Currículo indisponível no momento. Tente novamente mais tarde.');
+    this.errorMessage.set(GENERIC_API_ERROR_MESSAGE);
   }
 
   private onOpened(): void

@@ -3,6 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { AuthService } from '@services/auth.service';
+import { GENERIC_API_ERROR_MESSAGE } from '@services/error-feedback.service';
 import { ResumeService } from '@services/resume.service';
 import { SmoothScrollService } from '@services/smooth-scroll.service';
 import { Subject, of, throwError } from 'rxjs';
@@ -166,6 +167,28 @@ describe('ResumeCard', () => {
 
     const alert = compiled.querySelector('[role="alert"]');
     expect(alert?.textContent).toContain('Código inválido ou expirado');
+    expect(closeCardSpy).not.toHaveBeenCalled();
+  });
+
+  it('should display the generic inline error on server or network failures without leaking server details', async () => {
+    fetchResumePdfSpy.mockReturnValue(
+      throwError(() => new HttpErrorResponse({ status: 503, statusText: 'Service Unavailable', error: { message: 'Missing PDF file' } })),
+    );
+    isCardOpenSignal.set(true);
+
+    const fixture = TestBed.createComponent(ResumeCard);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    const censoredButton = Array.from(compiled.querySelectorAll<HTMLButtonElement>('button')).find(
+      (button) => button.textContent?.trim() === 'Currículo sem dados sensíveis',
+    );
+    censoredButton?.click();
+    await fixture.whenStable();
+
+    const alert = compiled.querySelector('[role="alert"]');
+    expect(alert?.textContent?.trim()).toBe(GENERIC_API_ERROR_MESSAGE);
+    expect(alert?.textContent).not.toContain('Missing PDF file');
     expect(closeCardSpy).not.toHaveBeenCalled();
   });
 

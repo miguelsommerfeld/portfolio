@@ -108,7 +108,12 @@
       }
 
       @if (errorMessage(); as error) {
-        <p role="alert" class="mt-4 rounded-xl border border-red-400/25 bg-red-500/10 px-3.5 py-2.5 text-xs leading-relaxed text-red-200">
+        <p
+          animate.enter="toast-enter"
+          animate.leave="toast-leave"
+          role="alert"
+          class="mt-4 rounded-xl border border-red-400/25 bg-red-500/10 px-3.5 py-2.5 text-xs leading-relaxed text-red-200"
+        >
           {{ error }}
         </p>
       }

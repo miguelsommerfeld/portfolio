@@ -44,6 +44,10 @@
       <div class="mt-6 flex flex-col gap-3">
         <a
           [href]="googleAuthUrl"
+          [attr.aria-disabled]="isConnecting() ? 'true' : null"
+          [class.opacity-50]="isConnecting()"
+          [class.pointer-events-none]="isConnecting()"
+          (click)="onSelectProvider($event, 'google')"
           class="group flex w-full items-center justify-center gap-3 rounded-2xl border border-white/15 bg-white/6 px-4 py-3 text-sm font-medium text-white/90 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.10)] origin-center transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform hover:scale-[1.02] hover:border-white/25 hover:bg-white/[0.12] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 motion-reduce:transition-none motion-reduce:hover:scale-100"
         >
           <img
@@ -57,6 +61,10 @@
 
         <a
           [href]="githubAuthUrl"
+          [attr.aria-disabled]="isConnecting() ? 'true' : null"
+          [class.opacity-50]="isConnecting()"
+          [class.pointer-events-none]="isConnecting()"
+          (click)="onSelectProvider($event, 'github')"
           class="group flex w-full items-center justify-center gap-3 rounded-2xl border border-white/15 bg-white/6 px-4 py-3 text-sm font-medium text-white/90 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.10)] origin-center transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform hover:scale-[1.02] hover:border-white/25 hover:bg-white/[0.12] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 motion-reduce:transition-none motion-reduce:hover:scale-100"
         >
           <img
@@ -68,6 +76,17 @@
           <span>Continuar com GitHub</span>
         </a>
       </div>
+
+      @if (errorMessage(); as error) {
+        <p
+          animate.enter="toast-enter"
+          animate.leave="toast-leave"
+          role="alert"
+          class="mt-4 rounded-xl border border-red-400/25 bg-red-500/10 px-3.5 py-2.5 text-xs leading-relaxed text-red-200"
+        >
+          {{ error }}
+        </p>
+      }
     </div>
   </div>
 }
