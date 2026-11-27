@@ -1,10 +1,12 @@
 import { Component, DestroyRef, afterNextRender, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { AuthCard } from '@components/auth-card/auth-card';
+import { Navbar } from '@components/navbar/navbar';
+import { ResumeCard } from '@components/resume-card/resume-card';
 import { SmoothScrollService } from '@services/smooth-scroll.service';
-import { Navbar } from './components/navbar/navbar';
 
 @Component({
-  imports: [Navbar, RouterOutlet],
+  imports: [Navbar, RouterOutlet, AuthCard, ResumeCard],
   selector: 'app-root',
   styleUrl: './app.css',
   templateUrl: './app.html',

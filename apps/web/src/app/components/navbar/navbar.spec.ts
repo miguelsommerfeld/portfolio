@@ -1,28 +1,29 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
 import { AuthService } from '@services/auth.service';
 import { Navbar } from './navbar';
 
 describe('Navbar', () => {
   let isAuthenticatedSignal: ReturnType<typeof signal<boolean>>;
   let isLoggingOutSignal: ReturnType<typeof signal<boolean>>;
+  let openAuthCardSpy: ReturnType<typeof vi.fn>;
   let logoutSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     isAuthenticatedSignal = signal(false);
     isLoggingOutSignal = signal(false);
+    openAuthCardSpy = vi.fn();
     logoutSpy = vi.fn();
 
     await TestBed.configureTestingModule({
       imports: [Navbar],
       providers: [
-        provideRouter([]),
         {
           provide: AuthService,
           useValue: {
             isAuthenticated: isAuthenticatedSignal.asReadonly(),
             isLoggingOut: isLoggingOutSignal.asReadonly(),
+            openAuthCard: openAuthCardSpy,
             logout: logoutSpy,
           },
         },
@@ -71,16 +72,19 @@ describe('Navbar', () => {
     expect(githubIcon?.getAttribute('aria-hidden')).toBe('true');
   });
 
-  it('should render Auth link pointing to /login when unauthenticated', async () => {
+  it('should render Auth button and open auth card on click when unauthenticated', async () => {
     const fixture = TestBed.createComponent(Navbar);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    const authLink = compiled.querySelector<HTMLAnchorElement>('a[href="/login"]');
-    const logoutButton = compiled.querySelector<HTMLButtonElement>('button');
+    const authButton = compiled.querySelector<HTMLButtonElement>('button');
 
-    expect(authLink).toBeTruthy();
-    expect(authLink?.textContent?.trim()).toBe('Auth');
-    expect(logoutButton).toBeNull();
+    expect(compiled.querySelector('a[href="/login"]')).toBeNull();
+    expect(authButton).toBeTruthy();
+    expect(authButton?.textContent?.trim()).toBe('Auth');
+
+    authButton?.click();
+    expect(openAuthCardSpy).toHaveBeenCalledTimes(1);
+    expect(logoutSpy).not.toHaveBeenCalled();
   });
 
   it('should replace Auth with Logout button when authenticated and call logout on click', async () => {
@@ -88,16 +92,15 @@ describe('Navbar', () => {
     const fixture = TestBed.createComponent(Navbar);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    const authLink = compiled.querySelector<HTMLAnchorElement>('a[href="/login"]');
     const logoutButton = compiled.querySelector<HTMLButtonElement>('button');
 
-    expect(authLink).toBeNull();
     expect(logoutButton).toBeTruthy();
     expect(logoutButton?.textContent?.trim()).toBe('Logout');
     expect(logoutButton?.disabled).toBe(false);
 
     logoutButton?.click();
     expect(logoutSpy).toHaveBeenCalledTimes(1);
+    expect(openAuthCardSpy).not.toHaveBeenCalled();
   });
 
   it('should disable Logout button while logout is in progress', async () => {

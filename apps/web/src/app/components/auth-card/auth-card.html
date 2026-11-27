@@ -1,0 +1,73 @@
+@if (isOpen()) {
+  <div
+    animate.enter="auth-backdrop-enter"
+    animate.leave="auth-backdrop-leave"
+    data-lenis-prevent
+    data-testid="auth-card-backdrop"
+    (click)="onBackdropClick($event)"
+    (wheel)="onPreventBackgroundScroll($event)"
+    (touchmove)="onPreventBackgroundScroll($event)"
+    class="fixed inset-0 z-60 flex items-center justify-center overscroll-contain bg-neutral-950/60 p-4 backdrop-blur-sm sm:p-6"
+  >
+    <div
+      animate.enter="auth-card-enter"
+      animate.leave="auth-card-leave"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="auth-card-title"
+      data-testid="auth-card"
+      class="relative w-full max-w-sm overflow-hidden rounded-3xl border border-white/15 bg-neutral-950/55 bg-linear-to-b from-white/10 to-white/3 p-6 backdrop-blur-2xl backdrop-saturate-150 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.16),0_24px_64px_-12px_rgba(0,0,0,0.75)] sm:p-7"
+    >
+      <div class="flex items-start justify-between gap-4">
+        <div class="space-y-1">
+          <h2 id="auth-card-title" class="text-lg font-semibold tracking-tight text-white/95">
+            Entrar
+          </h2>
+          <p class="text-xs leading-relaxed text-white/60">
+            Escolha um provedor para continuar
+          </p>
+        </div>
+
+        <button
+          #closeButtonRef
+          type="button"
+          aria-label="Fechar janela de autenticação"
+          (click)="onClose()"
+          class="inline-flex shrink-0 cursor-pointer items-center justify-center rounded-full p-1.5 text-white/60 transition-colors duration-200 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 motion-reduce:transition-none"
+        >
+          <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" class="h-4 w-4">
+            <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="mt-6 flex flex-col gap-3">
+        <a
+          [href]="googleAuthUrl"
+          class="group flex w-full items-center justify-center gap-3 rounded-2xl border border-white/15 bg-white/6 px-4 py-3 text-sm font-medium text-white/90 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.10)] origin-center transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform hover:scale-[1.02] hover:border-white/25 hover:bg-white/[0.12] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 motion-reduce:transition-none motion-reduce:hover:scale-100"
+        >
+          <img
+            src="/icons/google.png"
+            alt=""
+            aria-hidden="true"
+            class="h-5 w-5 shrink-0 object-contain"
+          />
+          <span>Continuar com Google</span>
+        </a>
+
+        <a
+          [href]="githubAuthUrl"
+          class="group flex w-full items-center justify-center gap-3 rounded-2xl border border-white/15 bg-white/6 px-4 py-3 text-sm font-medium text-white/90 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.10)] origin-center transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform hover:scale-[1.02] hover:border-white/25 hover:bg-white/[0.12] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 motion-reduce:transition-none motion-reduce:hover:scale-100"
+        >
+          <img
+            src="/icons/github.png"
+            alt=""
+            aria-hidden="true"
+            class="h-5 w-5 shrink-0 invert opacity-90"
+          />
+          <span>Continuar com GitHub</span>
+        </a>
+      </div>
+    </div>
+  </div>
+}
