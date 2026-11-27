@@ -5,7 +5,7 @@ import { TestBed } from '@angular/core/testing';
 import { API_BASE_URL } from '@config/api.config';
 import { AuthService, type AuthUser } from '@services/auth.service';
 import { ErrorFeedbackService, GENERIC_API_ERROR_MESSAGE } from '@services/error-feedback.service';
-import { ResumeService } from './resume.service';
+import { type ResumeCodeResponse, ResumeService } from './resume.service';
 
 describe('ResumeService', () => {
   let service: ResumeService;
@@ -51,7 +51,7 @@ describe('ResumeService', () => {
     expect(req.request.method).toBe('GET');
     expect(req.request.withCredentials).toBe(true);
 
-    req.flush({ user: mockUser });
+    req.flush({ user: mockUser, canAccessResumeCode: false });
 
     expect(service.isCheckingAccess()).toBe(false);
     expect(service.isCardOpen()).toBe(true);
@@ -81,6 +81,48 @@ describe('ResumeService', () => {
     expect(service.isCardOpen()).toBe(false);
     expect(authService.isAuthCardOpen()).toBe(false);
     expect(errorFeedback.message()).toBe(GENERIC_API_ERROR_MESSAGE);
+  });
+
+  it('should open code card only when user is authenticated with resume code permission', () => {
+    service.openCodeCard();
+    expect(service.isCodeCardOpen()).toBe(false);
+
+    authService.checkSession();
+    httpTesting.expectOne(`${API_BASE_URL}/auth/me`).flush({ user: mockUser, canAccessResumeCode: false });
+
+    service.openCodeCard();
+    expect(service.isCodeCardOpen()).toBe(false);
+
+    authService.checkSession();
+    httpTesting.expectOne(`${API_BASE_URL}/auth/me`).flush({ user: mockUser, canAccessResumeCode: true });
+
+    service.openCard();
+    expect(service.isCardOpen()).toBe(true);
+
+    service.openCodeCard();
+    expect(service.isCodeCardOpen()).toBe(true);
+    expect(service.isCardOpen()).toBe(false);
+
+    service.closeCodeCard();
+    expect(service.isCodeCardOpen()).toBe(false);
+  });
+
+  it('should request GET /resume/code with credentials', () => {
+    const mockCode: ResumeCodeResponse = {
+      code: 'A1B2-C3D4',
+      validForDate: '2026-11-25',
+      expiresAt: '2026-11-26T03:00:00.000Z',
+    };
+    let received: ResumeCodeResponse | undefined;
+
+    service.fetchResumeCode().subscribe((response) => (received = response));
+
+    const req = httpTesting.expectOne(`${API_BASE_URL}/resume/code`);
+    expect(req.request.method).toBe('GET');
+    expect(req.request.withCredentials).toBe(true);
+    req.flush(mockCode);
+
+    expect(received).toEqual(mockCode);
   });
 
   it('should request GET /resume without header for censored variant and with x-resume-code for full variant', () => {
