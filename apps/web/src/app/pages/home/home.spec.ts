@@ -1,6 +1,8 @@
 import { DOCUMENT } from '@angular/common';
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { ResumeService } from '@services/resume.service';
 import { Home } from './home';
 import { HOME_PROJECTS } from './home.projects';
 
@@ -31,11 +33,23 @@ describe('Home', () => {
   let doc: Document;
   let originalMatchMedia: typeof window.matchMedia | undefined;
   let originalScrollTo: typeof window.scrollTo | undefined;
+  let requestResumeAccessSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
+    requestResumeAccessSpy = vi.fn();
+
     await TestBed.configureTestingModule({
       imports: [Home],
-      providers: [provideRouter([])],
+      providers: [
+        provideRouter([]),
+        {
+          provide: ResumeService,
+          useValue: {
+            isCheckingAccess: signal(false).asReadonly(),
+            requestResumeAccess: requestResumeAccessSpy,
+          },
+        },
+      ],
     }).compileComponents();
 
     doc = TestBed.inject(DOCUMENT);
@@ -100,7 +114,7 @@ describe('Home', () => {
     expect(showcases.length).toBe(3);
   });
 
-  it('should render the Resume component with the final CTA link pointing to /curriculo', async () => {
+  it('should render the Resume component and request resume access on CTA click', async () => {
     const win = doc.defaultView!;
     Object.defineProperty(win, 'matchMedia', { value: createMatchMediaMock(true), configurable: true, writable: true });
 
@@ -109,11 +123,13 @@ describe('Home', () => {
 
     const compiled = fixture.nativeElement as HTMLElement;
     const resume = compiled.querySelector('app-resume');
-    const ctaLink = compiled.querySelector<HTMLAnchorElement>('a[href="/curriculo"]');
+    const ctaButton = resume?.querySelector<HTMLButtonElement>('button');
 
     expect(resume).toBeTruthy();
-    expect(ctaLink).toBeTruthy();
-    expect(ctaLink?.textContent?.trim()).toBe('Acessar currículo');
-    expect(ctaLink?.className).toContain('rounded-full');
+    expect(ctaButton?.textContent?.trim()).toBe('Acessar currículo');
+    expect(ctaButton?.className).toContain('rounded-full');
+
+    ctaButton?.click();
+    expect(requestResumeAccessSpy).toHaveBeenCalledTimes(1);
   });
 });

@@ -67,13 +67,15 @@
       </div>
 
       <div #ctaWrapRef class="relative z-20 flex justify-center px-5 pt-2 pb-6 sm:pb-8">
-        <a
-          routerLink="/curriculo"
-          (focus)="onCtaFocus()"
-          class="inline-flex items-center justify-center rounded-full bg-neutral-950/90 bg-linear-to-b from-neutral-700/90 via-neutral-900/95 to-neutral-950 px-7 py-3.5 text-sm font-medium tracking-tight text-white/95 ring-1 ring-inset ring-white/15 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.28),0_12px_30px_-6px_rgba(0,0,0,0.45)] origin-center transition-[transform,background-color,box-shadow,color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:scale-105 hover:from-neutral-700 hover:via-neutral-800 hover:to-neutral-950 hover:text-white hover:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.34),0_16px_34px_-6px_rgba(0,0,0,0.52)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white motion-reduce:transition-none motion-reduce:hover:scale-100 sm:text-base"
+        <button
+          type="button"
+          [disabled]="isCheckingAccess()"
+          (focus)="onCtaFocus($event)"
+          (click)="onAccessResume()"
+          class="inline-flex cursor-pointer items-center justify-center rounded-full bg-neutral-950/90 bg-linear-to-b from-neutral-700/90 via-neutral-900/95 to-neutral-950 px-7 py-3.5 text-sm font-medium tracking-tight text-white/95 ring-1 ring-inset ring-white/15 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.28),0_12px_30px_-6px_rgba(0,0,0,0.45)] origin-center transition-[transform,background-color,box-shadow,color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:scale-105 hover:from-neutral-700 hover:via-neutral-800 hover:to-neutral-950 hover:text-white hover:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.34),0_16px_34px_-6px_rgba(0,0,0,0.52)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100 motion-reduce:transition-none motion-reduce:hover:scale-100 sm:text-base"
         >
           Acessar currículo
-        </a>
+        </button>
       </div>
     </div>
   </div>

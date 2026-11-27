@@ -1,6 +1,6 @@
 import { DOCUMENT } from '@angular/common';
 import { Component, DestroyRef, ElementRef, afterNextRender, inject, signal, viewChild } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ResumeService } from '@services/resume.service';
 import { SmoothScrollService } from '@services/smooth-scroll.service';
 import gsap from 'gsap';
 
@@ -59,7 +59,6 @@ const PREVIEW_SECTIONS: readonly ResumePreviewSection[] = [
 
 @Component({
   host: { class: 'block' },
-  imports: [RouterLink],
   selector: 'app-resume',
   templateUrl: './resume.html',
 })
@@ -67,6 +66,7 @@ export class Resume
 {
   private readonly document = inject(DOCUMENT);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly resumeService = inject(ResumeService);
   private readonly smoothScroll = inject(SmoothScrollService);
 
   private gsapContext: gsap.Context | null = null;
@@ -78,6 +78,7 @@ export class Resume
   protected readonly ctaWrapRef = viewChild<ElementRef<HTMLElement>>('ctaWrapRef');
 
   protected readonly previewSections = PREVIEW_SECTIONS;
+  protected readonly isCheckingAccess = this.resumeService.isCheckingAccess;
   protected readonly reducedMotion = signal(false);
 
   constructor()
@@ -90,12 +91,26 @@ export class Resume
     });
   }
 
-  protected onCtaFocus(): void
+  protected onAccessResume(): void
   {
+    this.resumeService.requestResumeAccess();
+  }
+
+  protected onCtaFocus(event: FocusEvent): void
+  {
+    const target = event.target;
     const win = this.document.defaultView;
     const section = this.sectionRef()?.nativeElement;
 
-    if (!win || !section || this.reducedMotion()) {
+    if (!win || !section || this.reducedMotion() || !(target instanceof HTMLElement)) {
+      return;
+    }
+
+    try {
+      if (!target.matches(':focus-visible')) {
+        return;
+      }
+    } catch {
       return;
     }
 
