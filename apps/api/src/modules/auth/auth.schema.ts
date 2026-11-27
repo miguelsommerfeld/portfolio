@@ -10,6 +10,7 @@ export const oauthCallbackQuerySchema = z.object({
 
 export const authMeResponseSchema = z.object({
   user: userPayloadSchema,
+  canAccessResumeCode: z.boolean().describe("Indicates whether the authenticated user can access the daily resume code."),
 });
 
 export const authErrorResponseSchema = z.object({
