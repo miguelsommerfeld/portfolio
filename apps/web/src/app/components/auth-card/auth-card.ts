@@ -1,6 +1,6 @@
 import { DOCUMENT } from '@angular/common';
-import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, ElementRef, effect, inject, signal, viewChild } from '@angular/core';
+import { ApiHealthService } from '@services/api-health.service';
 import { AuthService, type AuthProvider } from '@services/auth.service';
 import { GENERIC_API_ERROR_MESSAGE } from '@services/error-feedback.service';
 import { SmoothScrollService } from '@services/smooth-scroll.service';
@@ -15,6 +15,7 @@ export class AuthCard
 {
   private readonly document = inject(DOCUMENT);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly apiHealth = inject(ApiHealthService);
   private readonly authService = inject(AuthService);
   private readonly smoothScroll = inject(SmoothScrollService);
 
@@ -60,24 +61,21 @@ export class AuthCard
     this.isConnecting.set(true);
     this.errorMessage.set(null);
 
-    this.connectSubscription = this.authService
-      .verifySession()
+    this.connectSubscription = this.apiHealth
+      .check()
       .pipe(
         finalize(() => {
           this.isConnecting.set(false);
           this.connectSubscription = null;
         }),
       )
-      .subscribe({
-        next: () => this.authService.activatePendingResumeIfSaved(),
-        error: (error: unknown) => {
-          if (error instanceof HttpErrorResponse && error.status === 401) {
-            this.authService.redirectToOAuth(provider);
-            return;
-          }
+      .subscribe((isHealthy) => {
+        if (isHealthy) {
+          this.authService.redirectToOAuth(provider);
+          return;
+        }
 
-          this.errorMessage.set(GENERIC_API_ERROR_MESSAGE);
-        },
+        this.errorMessage.set(GENERIC_API_ERROR_MESSAGE);
       });
   }
 

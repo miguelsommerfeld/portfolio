@@ -42,7 +42,11 @@ export class AuthService
   public checkSession(): void
   {
     this.verifySession().subscribe({
-      next: () => this.activatePendingResumeIfSaved(),
+      next: () => {
+        if (this.consumePostAuthOpenResume()) {
+          this._pendingResumeAccess.set(true);
+        }
+      },
       error: () => {
         this._user.set(null);
         this.clearPostAuthAction();
@@ -89,13 +93,6 @@ export class AuthService
   {
     this.clearPostAuthAction();
     this._isAuthCardOpen.set(false);
-  }
-
-  public activatePendingResumeIfSaved(): void
-  {
-    if (this.consumePostAuthOpenResume()) {
-      this._pendingResumeAccess.set(true);
-    }
   }
 
   public clearPendingResumeAccess(): void
