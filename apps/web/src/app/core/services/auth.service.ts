@@ -1,8 +1,9 @@
 import { DOCUMENT } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { type Observable, finalize, tap } from 'rxjs';
 import { API_BASE_URL } from '@config/api.config';
+import { ErrorFeedbackService } from '@services/error-feedback.service';
+import { type Observable, finalize, tap } from 'rxjs';
 
 export type AuthProvider = 'google' | 'github';
 
@@ -26,6 +27,7 @@ export class AuthService
 {
   private readonly document = inject(DOCUMENT);
   private readonly http = inject(HttpClient);
+  private readonly errorFeedback = inject(ErrorFeedbackService);
   private readonly _user = signal<AuthUser | null>(null);
   private readonly _isLoggingOut = signal(false);
   private readonly _isAuthCardOpen = signal(false);
@@ -40,11 +42,7 @@ export class AuthService
   public checkSession(): void
   {
     this.verifySession().subscribe({
-      next: () => {
-        if (this.consumePostAuthOpenResume()) {
-          this._pendingResumeAccess.set(true);
-        }
-      },
+      next: () => this.activatePendingResumeIfSaved(),
       error: () => {
         this._user.set(null);
         this.clearPostAuthAction();
@@ -68,12 +66,14 @@ export class AuthService
       return;
     }
 
+    this.errorFeedback.dismiss();
     this.clearPostAuthAction();
     this._isAuthCardOpen.set(true);
   }
 
   public handleUnauthorized(openResumeAfterAuth = false): void
   {
+    this.errorFeedback.dismiss();
     this._user.set(null);
 
     if (openResumeAfterAuth) {
@@ -91,6 +91,13 @@ export class AuthService
     this._isAuthCardOpen.set(false);
   }
 
+  public activatePendingResumeIfSaved(): void
+  {
+    if (this.consumePostAuthOpenResume()) {
+      this._pendingResumeAccess.set(true);
+    }
+  }
+
   public clearPendingResumeAccess(): void
   {
     this._pendingResumeAccess.set(false);
@@ -99,6 +106,11 @@ export class AuthService
   public getOAuthUrl(provider: AuthProvider): string
   {
     return `${API_BASE_URL}/auth/${provider}`;
+  }
+
+  public redirectToOAuth(provider: AuthProvider): void
+  {
+    this.document.defaultView?.location.assign(this.getOAuthUrl(provider));
   }
 
   public logout(): void
@@ -119,7 +131,7 @@ export class AuthService
           this._pendingResumeAccess.set(false);
         },
         error: () => {
-          // Keep current state when logout request fails.
+          this.errorFeedback.showGenericError();
         },
       });
   }

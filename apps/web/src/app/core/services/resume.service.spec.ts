@@ -4,11 +4,13 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { API_BASE_URL } from '@config/api.config';
 import { AuthService, type AuthUser } from '@services/auth.service';
+import { ErrorFeedbackService, GENERIC_API_ERROR_MESSAGE } from '@services/error-feedback.service';
 import { ResumeService } from './resume.service';
 
 describe('ResumeService', () => {
   let service: ResumeService;
   let authService: AuthService;
+  let errorFeedback: ErrorFeedbackService;
   let httpTesting: HttpTestingController;
   let doc: Document;
 
@@ -26,12 +28,14 @@ describe('ResumeService', () => {
 
     service = TestBed.inject(ResumeService);
     authService = TestBed.inject(AuthService);
+    errorFeedback = TestBed.inject(ErrorFeedbackService);
     httpTesting = TestBed.inject(HttpTestingController);
     doc = TestBed.inject(DOCUMENT);
     doc.defaultView?.sessionStorage.clear();
   });
 
   afterEach(() => {
+    errorFeedback.dismiss();
     httpTesting.verify();
     doc.defaultView?.sessionStorage.clear();
     vi.restoreAllMocks();
@@ -63,7 +67,20 @@ describe('ResumeService', () => {
     expect(service.isCheckingAccess()).toBe(false);
     expect(service.isCardOpen()).toBe(false);
     expect(authService.isAuthCardOpen()).toBe(true);
+    expect(errorFeedback.message()).toBeNull();
     expect(doc.defaultView?.sessionStorage.getItem('portfolio:post_auth_action')).toBe('open_resume');
+  });
+
+  it('should display generic error feedback when GET /auth/me fails due to network or server error', () => {
+    service.requestResumeAccess();
+
+    const req = httpTesting.expectOne(`${API_BASE_URL}/auth/me`);
+    req.error(new ProgressEvent('error'));
+
+    expect(service.isCheckingAccess()).toBe(false);
+    expect(service.isCardOpen()).toBe(false);
+    expect(authService.isAuthCardOpen()).toBe(false);
+    expect(errorFeedback.message()).toBe(GENERIC_API_ERROR_MESSAGE);
   });
 
   it('should request GET /resume without header for censored variant and with x-resume-code for full variant', () => {
