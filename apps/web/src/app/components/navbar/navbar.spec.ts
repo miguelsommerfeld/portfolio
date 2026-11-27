@@ -1,18 +1,23 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { AuthService } from '@services/auth.service';
+import { ResumeService } from '@services/resume.service';
 import { Navbar } from './navbar';
 
 describe('Navbar', () => {
   let isAuthenticatedSignal: ReturnType<typeof signal<boolean>>;
+  let canAccessResumeCodeSignal: ReturnType<typeof signal<boolean>>;
   let isLoggingOutSignal: ReturnType<typeof signal<boolean>>;
   let openAuthCardSpy: ReturnType<typeof vi.fn>;
+  let openCodeCardSpy: ReturnType<typeof vi.fn>;
   let logoutSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     isAuthenticatedSignal = signal(false);
+    canAccessResumeCodeSignal = signal(false);
     isLoggingOutSignal = signal(false);
     openAuthCardSpy = vi.fn();
+    openCodeCardSpy = vi.fn();
     logoutSpy = vi.fn();
 
     await TestBed.configureTestingModule({
@@ -22,9 +27,16 @@ describe('Navbar', () => {
           provide: AuthService,
           useValue: {
             isAuthenticated: isAuthenticatedSignal.asReadonly(),
+            canAccessResumeCode: canAccessResumeCodeSignal.asReadonly(),
             isLoggingOut: isLoggingOutSignal.asReadonly(),
             openAuthCard: openAuthCardSpy,
             logout: logoutSpy,
+          },
+        },
+        {
+          provide: ResumeService,
+          useValue: {
+            openCodeCard: openCodeCardSpy,
           },
         },
       ],
@@ -84,23 +96,39 @@ describe('Navbar', () => {
 
     authButton?.click();
     expect(openAuthCardSpy).toHaveBeenCalledTimes(1);
+    expect(openCodeCardSpy).not.toHaveBeenCalled();
     expect(logoutSpy).not.toHaveBeenCalled();
   });
 
-  it('should replace Auth with Logout button when authenticated and call logout on click', async () => {
+  it('should replace Auth with Logout button when authenticated without resume code access', async () => {
     isAuthenticatedSignal.set(true);
     const fixture = TestBed.createComponent(Navbar);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    const logoutButton = compiled.querySelector<HTMLButtonElement>('button');
+    const buttons = Array.from(compiled.querySelectorAll<HTMLButtonElement>('button'));
 
-    expect(logoutButton).toBeTruthy();
-    expect(logoutButton?.textContent?.trim()).toBe('Logout');
-    expect(logoutButton?.disabled).toBe(false);
+    expect(buttons.map((button) => button.textContent?.trim())).toEqual(['Logout']);
+    expect(buttons[0].disabled).toBe(false);
 
-    logoutButton?.click();
+    buttons[0].click();
     expect(logoutSpy).toHaveBeenCalledTimes(1);
     expect(openAuthCardSpy).not.toHaveBeenCalled();
+    expect(openCodeCardSpy).not.toHaveBeenCalled();
+  });
+
+  it('should render Code button to the left of Logout when authenticated user can access resume code', async () => {
+    isAuthenticatedSignal.set(true);
+    canAccessResumeCodeSignal.set(true);
+    const fixture = TestBed.createComponent(Navbar);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const buttons = Array.from(compiled.querySelectorAll<HTMLButtonElement>('button'));
+
+    expect(buttons.map((button) => button.textContent?.trim())).toEqual(['Code', 'Logout']);
+
+    buttons[0].click();
+    expect(openCodeCardSpy).toHaveBeenCalledTimes(1);
+    expect(logoutSpy).not.toHaveBeenCalled();
   });
 
   it('should disable Logout button while logout is in progress', async () => {

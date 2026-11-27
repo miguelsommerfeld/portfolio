@@ -17,6 +17,7 @@ export interface AuthUser {
 
 export interface AuthMeResponse {
   user: AuthUser;
+  canAccessResumeCode?: boolean;
 }
 
 const POST_AUTH_ACTION_KEY = 'portfolio:post_auth_action';
@@ -29,12 +30,14 @@ export class AuthService
   private readonly http = inject(HttpClient);
   private readonly errorFeedback = inject(ErrorFeedbackService);
   private readonly _user = signal<AuthUser | null>(null);
+  private readonly _canAccessResumeCode = signal(false);
   private readonly _isLoggingOut = signal(false);
   private readonly _isAuthCardOpen = signal(false);
   private readonly _pendingResumeAccess = signal(false);
 
   public readonly user = this._user.asReadonly();
   public readonly isAuthenticated = computed(() => this._user() !== null);
+  public readonly canAccessResumeCode = this._canAccessResumeCode.asReadonly();
   public readonly isLoggingOut = this._isLoggingOut.asReadonly();
   public readonly isAuthCardOpen = this._isAuthCardOpen.asReadonly();
   public readonly pendingResumeAccess = this._pendingResumeAccess.asReadonly();
@@ -49,6 +52,7 @@ export class AuthService
       },
       error: () => {
         this._user.set(null);
+        this._canAccessResumeCode.set(false);
         this.clearPostAuthAction();
       },
     });
@@ -59,6 +63,7 @@ export class AuthService
     return this.http.get<AuthMeResponse>(`${API_BASE_URL}/auth/me`, { withCredentials: true }).pipe(
       tap((response) => {
         this._user.set(response.user);
+        this._canAccessResumeCode.set(Boolean(response.canAccessResumeCode));
         this._isAuthCardOpen.set(false);
       }),
     );
@@ -79,6 +84,7 @@ export class AuthService
   {
     this.errorFeedback.dismiss();
     this._user.set(null);
+    this._canAccessResumeCode.set(false);
 
     if (openResumeAfterAuth) {
       this.savePostAuthOpenResume();
@@ -87,6 +93,11 @@ export class AuthService
     }
 
     this._isAuthCardOpen.set(true);
+  }
+
+  public revokeResumeCodeAccess(): void
+  {
+    this._canAccessResumeCode.set(false);
   }
 
   public closeAuthCard(): void
@@ -124,6 +135,7 @@ export class AuthService
       .subscribe({
         next: () => {
           this._user.set(null);
+          this._canAccessResumeCode.set(false);
           this.clearPostAuthAction();
           this._pendingResumeAccess.set(false);
         },

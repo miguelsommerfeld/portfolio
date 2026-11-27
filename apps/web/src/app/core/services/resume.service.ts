@@ -6,6 +6,12 @@ import { AuthService } from '@services/auth.service';
 import { ErrorFeedbackService } from '@services/error-feedback.service';
 import { type Observable, finalize } from 'rxjs';
 
+export interface ResumeCodeResponse {
+  code: string;
+  validForDate: string;
+  expiresAt: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ResumeService
 {
@@ -15,20 +21,39 @@ export class ResumeService
   private readonly errorFeedback = inject(ErrorFeedbackService);
 
   private readonly _isCardOpen = signal(false);
+  private readonly _isCodeCardOpen = signal(false);
   private readonly _isCheckingAccess = signal(false);
 
   public readonly isCardOpen = this._isCardOpen.asReadonly();
+  public readonly isCodeCardOpen = this._isCodeCardOpen.asReadonly();
   public readonly isCheckingAccess = this._isCheckingAccess.asReadonly();
 
   public openCard(): void
   {
     this.errorFeedback.dismiss();
+    this._isCodeCardOpen.set(false);
     this._isCardOpen.set(true);
   }
 
   public closeCard(): void
   {
     this._isCardOpen.set(false);
+  }
+
+  public openCodeCard(): void
+  {
+    if (!this.authService.isAuthenticated() || !this.authService.canAccessResumeCode()) {
+      return;
+    }
+
+    this.errorFeedback.dismiss();
+    this._isCardOpen.set(false);
+    this._isCodeCardOpen.set(true);
+  }
+
+  public closeCodeCard(): void
+  {
+    this._isCodeCardOpen.set(false);
   }
 
   public requestResumeAccess(): void
@@ -53,6 +78,11 @@ export class ResumeService
           this.errorFeedback.showGenericError();
         },
       });
+  }
+
+  public fetchResumeCode(): Observable<ResumeCodeResponse>
+  {
+    return this.http.get<ResumeCodeResponse>(`${API_BASE_URL}/resume/code`, { withCredentials: true });
   }
 
   public fetchResumePdf(accessCode?: string): Observable<Blob>

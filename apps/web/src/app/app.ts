@@ -4,10 +4,11 @@ import { AuthCard } from '@components/auth-card/auth-card';
 import { ErrorToast } from '@components/error-toast/error-toast';
 import { Navbar } from '@components/navbar/navbar';
 import { ResumeCard } from '@components/resume-card/resume-card';
+import { ResumeCodeCard } from '@components/resume-code-card/resume-code-card';
 import { SmoothScrollService } from '@services/smooth-scroll.service';
 
 @Component({
-  imports: [Navbar, RouterOutlet, AuthCard, ResumeCard, ErrorToast],
+  imports: [Navbar, RouterOutlet, AuthCard, ResumeCard, ResumeCodeCard, ErrorToast],
   selector: 'app-root',
   styleUrl: './app.css',
   templateUrl: './app.html',

@@ -37,7 +37,7 @@ describe('AuthService', () => {
     doc.defaultView?.sessionStorage.clear();
   });
 
-  it('should populate user and close auth card when GET /auth/me succeeds', () => {
+  it('should populate user, resume code permission, and close auth card when GET /auth/me succeeds', () => {
     service.openAuthCard();
     expect(service.isAuthCardOpen()).toBe(true);
 
@@ -47,12 +47,32 @@ describe('AuthService', () => {
     expect(req.request.method).toBe('GET');
     expect(req.request.withCredentials).toBe(true);
 
-    req.flush({ user: mockUser });
+    req.flush({ user: mockUser, canAccessResumeCode: true });
 
     expect(service.user()).toEqual(mockUser);
     expect(service.isAuthenticated()).toBe(true);
+    expect(service.canAccessResumeCode()).toBe(true);
     expect(service.isAuthCardOpen()).toBe(false);
     expect(service.pendingResumeAccess()).toBe(false);
+  });
+
+  it('should default canAccessResumeCode to false when GET /auth/me returns false or omits the flag', () => {
+    service.checkSession();
+    httpTesting.expectOne(`${API_BASE_URL}/auth/me`).flush({ user: mockUser, canAccessResumeCode: false });
+    expect(service.canAccessResumeCode()).toBe(false);
+
+    service.checkSession();
+    httpTesting.expectOne(`${API_BASE_URL}/auth/me`).flush({ user: mockUser });
+    expect(service.canAccessResumeCode()).toBe(false);
+  });
+
+  it('should revoke resume code access explicitly when requested', () => {
+    service.checkSession();
+    httpTesting.expectOne(`${API_BASE_URL}/auth/me`).flush({ user: mockUser, canAccessResumeCode: true });
+    expect(service.canAccessResumeCode()).toBe(true);
+
+    service.revokeResumeCodeAccess();
+    expect(service.canAccessResumeCode()).toBe(false);
   });
 
   it('should consume post-auth resume intent and signal pendingResumeAccess after OAuth return', () => {
@@ -60,7 +80,7 @@ describe('AuthService', () => {
     expect(doc.defaultView?.sessionStorage.getItem('portfolio:post_auth_action')).toBe('open_resume');
 
     service.checkSession();
-    httpTesting.expectOne(`${API_BASE_URL}/auth/me`).flush({ user: mockUser });
+    httpTesting.expectOne(`${API_BASE_URL}/auth/me`).flush({ user: mockUser, canAccessResumeCode: false });
 
     expect(service.pendingResumeAccess()).toBe(true);
     expect(doc.defaultView?.sessionStorage.getItem('portfolio:post_auth_action')).toBeNull();
@@ -81,7 +101,7 @@ describe('AuthService', () => {
     expect(doc.defaultView?.sessionStorage.getItem('portfolio:post_auth_action')).toBeNull();
   });
 
-  it('should silently clear user and post-auth intent when initial checkSession fails', () => {
+  it('should silently clear user, resume code permission, and post-auth intent when initial checkSession fails', () => {
     service.handleUnauthorized(true);
     service.checkSession();
 
@@ -90,6 +110,7 @@ describe('AuthService', () => {
 
     expect(service.user()).toBeNull();
     expect(service.isAuthenticated()).toBe(false);
+    expect(service.canAccessResumeCode()).toBe(false);
     expect(doc.defaultView?.sessionStorage.getItem('portfolio:post_auth_action')).toBeNull();
     expect(errorFeedback.message()).toBeNull();
   });
@@ -104,22 +125,24 @@ describe('AuthService', () => {
     expect(service.isAuthCardOpen()).toBe(false);
 
     service.checkSession();
-    httpTesting.expectOne(`${API_BASE_URL}/auth/me`).flush({ user: mockUser });
+    httpTesting.expectOne(`${API_BASE_URL}/auth/me`).flush({ user: mockUser, canAccessResumeCode: false });
 
     service.openAuthCard();
     expect(service.isAuthCardOpen()).toBe(false);
   });
 
-  it('should clear user and open auth card on handleUnauthorized', () => {
+  it('should clear user and resume code permission and open auth card on handleUnauthorized', () => {
     service.checkSession();
-    httpTesting.expectOne(`${API_BASE_URL}/auth/me`).flush({ user: mockUser });
+    httpTesting.expectOne(`${API_BASE_URL}/auth/me`).flush({ user: mockUser, canAccessResumeCode: true });
 
     expect(service.isAuthenticated()).toBe(true);
+    expect(service.canAccessResumeCode()).toBe(true);
 
     service.handleUnauthorized();
 
     expect(service.user()).toBeNull();
     expect(service.isAuthenticated()).toBe(false);
+    expect(service.canAccessResumeCode()).toBe(false);
     expect(service.isAuthCardOpen()).toBe(true);
   });
 
@@ -128,9 +151,9 @@ describe('AuthService', () => {
     expect(service.getOAuthUrl('github')).toBe(`${API_BASE_URL}/auth/github`);
   });
 
-  it('should call POST /auth/logout with credentials, prevent duplicate clicks, and clear user on 204', () => {
+  it('should call POST /auth/logout with credentials, prevent duplicate clicks, and clear user and permission on 204', () => {
     service.checkSession();
-    httpTesting.expectOne(`${API_BASE_URL}/auth/me`).flush({ user: mockUser });
+    httpTesting.expectOne(`${API_BASE_URL}/auth/me`).flush({ user: mockUser, canAccessResumeCode: true });
 
     service.logout();
     service.logout();
@@ -146,12 +169,13 @@ describe('AuthService', () => {
     expect(service.isLoggingOut()).toBe(false);
     expect(service.user()).toBeNull();
     expect(service.isAuthenticated()).toBe(false);
+    expect(service.canAccessResumeCode()).toBe(false);
     expect(errorFeedback.message()).toBeNull();
   });
 
   it('should show generic error feedback when POST /auth/logout fails without exposing server details', () => {
     service.checkSession();
-    httpTesting.expectOne(`${API_BASE_URL}/auth/me`).flush({ user: mockUser });
+    httpTesting.expectOne(`${API_BASE_URL}/auth/me`).flush({ user: mockUser, canAccessResumeCode: true });
 
     service.logout();
 
@@ -160,6 +184,7 @@ describe('AuthService', () => {
 
     expect(service.isLoggingOut()).toBe(false);
     expect(service.isAuthenticated()).toBe(true);
+    expect(service.canAccessResumeCode()).toBe(true);
     expect(errorFeedback.message()).toBe(GENERIC_API_ERROR_MESSAGE);
     expect(errorFeedback.message()).not.toContain('Internal database panic');
   });
