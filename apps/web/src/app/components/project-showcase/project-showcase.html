@@ -1,13 +1,13 @@
 <section
   #sectionRef
   [attr.aria-labelledby]="'project-title-' + project().id"
-  class="relative flex min-h-screen w-full flex-col overflow-hidden bg-neutral-950 pt-14 lg:h-screen"
+  class="relative z-10 flex min-h-screen w-full flex-col overflow-hidden pt-14 lg:h-screen"
 >
   <div aria-hidden="true" class="pointer-events-none absolute inset-0 select-none overflow-hidden">
     @for (slide of project().slides; track slide.id; let i = $index) {
       <div
         class="absolute inset-0 transition-opacity duration-700 ease-out motion-reduce:transition-none"
-        [class.opacity-25]="i === activeSlideIndex()"
+        [class.opacity-15]="i === activeSlideIndex()"
         [class.opacity-0]="i !== activeSlideIndex()"
       >
         @if (hasValidImage(slide)) {
@@ -18,9 +18,8 @@
       </div>
     }
 
-    <div class="absolute inset-0 bg-neutral-950/75"></div>
-    <div class="absolute inset-0 bg-linear-to-b from-neutral-950 via-transparent to-neutral-950"></div>
-    <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_25%,rgba(10,10,10,0.82)_100%)]"></div>
+    <div class="absolute inset-0 bg-linear-to-b from-neutral-950/70 via-transparent to-neutral-950/70"></div>
+    <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_35%,rgba(10,10,10,0.55)_100%)]"></div>
   </div>
 
   <div #contentRef class="relative z-10 mx-auto flex w-full max-w-7xl flex-1 items-center px-5 py-8 sm:px-8 lg:px-12">

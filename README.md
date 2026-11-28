@@ -25,7 +25,7 @@ Este repositório não foi concebido como um template para terceiros instalarem 
 O projeto separa responsabilidades em quatro camadas claras dentro do mesmo repositório:
 
 - **`apps/api`**: API HTTP stateless em Node.js ESM com Fastify v5, TypeScript estrito e Zod v4. Gerencia autenticação OAuth2 (Google e GitHub), sessão JWT em cookie `HttpOnly`, entrega controlada de currículo em PDF, healthcheck e especificação OpenAPI via Swagger.
-- **`apps/web`**: SPA em Angular 22+ (100% standalone + Signals) com Tailwind CSS v4, Lenis, GSAP ScrollTrigger e suíte de testes unitários em Vitest. Combina dark mode em acabamento *liquid glass*, animações sincronizadas ao scroll e modais integrados ao fluxo de autenticação e currículo.
+- **`apps/web`**: SPA em Angular 22+ (100% standalone + Signals) com Tailwind CSS v4, Lenis, GSAP ScrollTrigger, tsParticles e suíte de testes unitários em Vitest. Combina dark mode em acabamento *liquid glass*, fundo interativo de partículas sincronizado aos gradientes das seções, animações acopladas ao scroll e modais integrados ao fluxo de autenticação e currículo.
 - **`shared/`**: Contratos Zod comuns (`authProviderSchema`, `userPayloadSchema`) e validação centralizada de variáveis de ambiente (`env.ts`).
 - **`.agent/` e `AGENTS.md`**: Camada de engenharia de contexto e especificações que orientou o desenvolvimento assistido por Agentes de IA (**Antigravity**).
 
@@ -45,7 +45,7 @@ flowchart LR
 | :--- | :--- |
 | **Monorepo & Contratos** | npm workspaces, TypeScript (`strict`), Zod v4 |
 | **Backend (`apps/api`)** | Node.js 24+ (ESM), Fastify v5, `@fastify/type-provider-zod`, `@fastify/oauth2`, `@fastify/jwt`, `@fastify/cookie`, `@fastify/cors`, `@fastify/rate-limit`, `@fastify/swagger`, `@fastify/swagger-ui`, `tsx`, `tsc-alias` |
-| **Frontend (`apps/web`)** | Angular 22 (Standalone + Signals + View Transitions), Tailwind CSS v4 (`@tailwindcss/postcss`), Lenis, GSAP (`ScrollTrigger`), RxJS, Vitest + jsdom |
+| **Frontend (`apps/web`)** | Angular 22 (Standalone + Signals + View Transitions), Tailwind CSS v4 (`@tailwindcss/postcss`), Lenis, GSAP (`ScrollTrigger`), tsParticles (`@tsparticles/angular`, `@tsparticles/engine`, `@tsparticles/slim`), RxJS, Vitest + jsdom |
 | **Containerização** | Docker (builds multi-stage na API e no Web), Docker Compose, Nginx 1.27 Alpine |
 | **Engenharia & IA** | Antigravity (`AGENTS.md`, `.agent/rules/`, `.agent/web/`), GitFlow + Conventional Commits |
 
@@ -130,6 +130,7 @@ portfolio/
 │       │       │   ├── auth-card/          # Modal OAuth2 (Google / GitHub) com healthcheck prévio
 │       │       │   ├── error-toast/        # Toast global de erros de API
 │       │       │   ├── navbar/             # Barra fixa liquid glass (LinkedIn, GitHub, Code, Auth/Logout)
+│       │       │   ├── particles-background/ # Fundo fixo de partículas tsParticles reativo ao gradiente ativo
 │       │       │   ├── project-showcase/   # Vitrine reutilizável com scroll pinning e fallback visual
 │       │       │   ├── resume/             # Folha A4 com revelação 3D sincronizada ao scroll
 │       │       │   ├── resume-card/        # Modal de escolha (censurado vs. completo com código)
@@ -231,14 +232,16 @@ sequenceDiagram
 
 ### Arquitetura Angular 22
 
-- **100% Standalone e Reativo com Signals**: sem `NgModule`, utilizando `signal()`, `computed()`, `effect()`, `input()`, `viewChild()`, `inject()` e a sintaxe moderna de templates (`@if`, `@for`, `@empty`), mantendo RxJS restrito a fluxos HTTP/roteamento.
+- **100% Standalone e Reativo com Signals**: sem `NgModule`, utilizando `signal()`, `computed()`, `effect()`, `input()`, `output()`, `viewChild()`, `inject()` e a sintaxe moderna de templates (`@if`, `@for`, `@empty`), mantendo RxJS restrito a fluxos HTTP/roteamento.
 - **Bootstrap e Rotas**: `app.config.ts` registra `provideRouter(routes, withViewTransitions())`, `provideHttpClient()` e `provideAppInitializer()` disparando `AuthService.checkSession()`. A Homepage é carregada sob demanda via `loadComponent`, e `/login?error=...` redireciona para `/` acionando `ErrorFeedbackService`.
 - **Identidade Visual & Tipografia**: dark mode fixo (`bg-neutral-950`) em acabamento *liquid glass* (`backdrop-blur`, bordas translúcidas e reflexo especular) usando exclusivamente a fonte local **`JetBrains Mono`** (`apps/web/public/fonts/JetBrainsMono-Medium.woff2`), sem dependência de CDNs externas.
 
-### Experiência da Homepage em 3 Atos
+### Experiência da Homepage em 3 Atos e Fundo de Partículas
+
+- **Partículas & Gradiente Reativo (`ParticlesBackground`)**: camada fixa (`z-0`, `aria-hidden="true"`) construída com **tsParticles** (`@tsparticles/angular` + `@tsparticles/slim`, `fpsLimit: 60`, `pauseOnBlur: true` e efeito `repulse` no hover). A Homepage monitora a seção visível via `IntersectionObserver` e recebe o `accentGradient` do slide ativo de cada `ProjectShowcase` (`activeAccentChange`); a cor RGB extraída do gradiente é interpolada suavemente com **GSAP** e aplicada em HSL (misturando tom primário e destaque claro) às partículas em tempo real, combinando-se ao glow/gradiente ambiente de cada seção. Sob `prefers-reduced-motion: reduce`, movimento e interatividade das partículas são desativados, e a inicialização verifica `OffscreenCanvas` para manter compatibilidade segura em `jsdom`.
 
 1. **Hero com Typewriter Effect (`Home`)**: digitação progressiva da mensagem de boas-vindas com cursor pulsante, indicador de scroll via `animate.enter` e transição de saída controlada por `ScrollTrigger`.
-2. **Vitrine Reutilizável de Projetos (`ProjectShowcase`)**: cada projeto em `home.projects.ts` ocupa uma seção com fundo ambiente sincronizado à paleta do slide ativo. Em desktop (`≥ 1024px`), o `ScrollTrigger` trava a seção (`pin: true`) e alterna slides livremente pelo progresso do scroll sem `snap` forçado; em mobile ou sob `prefers-reduced-motion`, o pin é desativado e os slides permanecem navegáveis pela lista numerada. Quando um projeto não define `imageUrl`, um quadro visual estilizado com `accentGradient` evita quebra de layout.
+2. **Vitrine Reutilizável de Projetos (`ProjectShowcase`)**: cada projeto em `home.projects.ts` ocupa uma seção translúcida com fundo ambiente e gradiente sincronizados à paleta do slide ativo (emitindo o gradiente atual para tingir as partículas). Em desktop (`≥ 1024px`), o `ScrollTrigger` trava a seção (`pin: true`) e alterna slides livremente pelo progresso do scroll sem `snap` forçado; em mobile ou sob `prefers-reduced-motion`, o pin é desativado e os slides permanecem navegáveis pela lista numerada. Quando um projeto não define `imageUrl`, um quadro visual estilizado com `accentGradient` evita quebra de layout.
 3. **Prévia 3D do Currículo (`Resume`)**: folha vertical em proporção A4 sobre palco `sticky` com perspectiva 3D (`rotateX`, `scale` e paralaxe do símbolo `?`) sincronizada ao scroll (`scrub: 0.6`), revelando o CTA **`Acessar currículo`**.
 
 ### Modais Globais e Integração com a API
@@ -255,7 +258,7 @@ Montados diretamente no shell raiz (`app.html`) para disponibilidade imediata se
 
 - **Resolução Dinâmica da URL da API (`api.config.ts`)**: prioridade `window.__ENV__.API_BASE_URL` (injetado pelo Nginx em runtime via `/env.js`) → `__API_BASE_URL__` (definido em build/dev via `scripts/run-ng.mts` lendo o `.env` da raiz) → fallback `http://localhost:3333`.
 - **Rolagem Suave e Acessibilidade**: `SmoothScrollService` integra `Lenis` ao ticker do `GSAP`, cancela inércia ao abrir modais (`cancelMomentum()`), desativa animações sob `prefers-reduced-motion: reduce` e protege chamadas em `jsdom` quando `matchMedia` não existe.
-- **Testes Unitários (Vitest)**: **15 arquivos `.spec.ts`** cobrindo todos os componentes (`App`, `Navbar`, `Home`, `ProjectShowcase`, `Resume`, `AuthCard`, `ResumeCard`, `ResumeCodeCard`, `ErrorToast`) e todos os serviços/configs (`api.config`, `ApiHealthService`, `AuthService`, `ErrorFeedbackService`, `ResumeService`, `SmoothScrollService`).
+- **Testes Unitários (Vitest)**: **16 arquivos `.spec.ts`** cobrindo todos os componentes (`App`, `Navbar`, `Home`, `ParticlesBackground`, `ProjectShowcase`, `Resume`, `AuthCard`, `ResumeCard`, `ResumeCodeCard`, `ErrorToast`) e todos os serviços/configs (`api.config`, `ApiHealthService`, `AuthService`, `ErrorFeedbackService`, `ResumeService`, `SmoothScrollService`).
 
 ---
 

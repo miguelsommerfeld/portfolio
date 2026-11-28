@@ -85,6 +85,8 @@ describe('ProjectShowcase', () => {
   it('should render the initial slide image with overlay text and switch to styled fallback when selecting a slide without imageUrl', async () => {
     const fixture = TestBed.createComponent(ProjectShowcase);
     fixture.componentRef.setInput('project', MOCK_PROJECT);
+    const emittedAccents: (string | undefined)[] = [];
+    fixture.componentInstance.activeAccentChange.subscribe((accent) => emittedAccents.push(accent));
     await fixture.whenStable();
 
     const compiled = fixture.nativeElement as HTMLElement;
@@ -111,6 +113,7 @@ describe('ProjectShowcase', () => {
     expect(frame?.querySelector('img')).toBeNull();
     expect(frame?.querySelector('[role="img"]')?.getAttribute('aria-label')).toBe('Detalhamento operacional sem imagem definida');
     expect(frame?.textContent).toContain('Detalhamento Operacional');
+    expect(emittedAccents).toContain(MOCK_PROJECT.slides[1].accentGradient);
   });
 
   it('should render styled fallback when an image fails to load', async () => {

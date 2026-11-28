@@ -1,0 +1,7 @@
+@if (isReady()) {
+  <ngx-particles
+    class="block h-full w-full [&>div]:h-full [&>div]:w-full"
+    [options]="options()"
+    (particlesLoaded)="onParticlesLoaded($event)"
+  />
+}
