@@ -1,5 +1,6 @@
 import { DOCUMENT } from '@angular/common';
-import { Component, DestroyRef, ElementRef, afterNextRender, inject, signal, viewChild } from '@angular/core';
+import { Component, DestroyRef, ElementRef, afterNextRender, computed, inject, signal, viewChild } from '@angular/core';
+import { ParticlesBackground } from '@components/particles-background/particles-background';
 import { ProjectShowcase } from '@components/project-showcase/project-showcase';
 import { Resume } from '@components/resume/resume';
 import { SmoothScrollService } from '@services/smooth-scroll.service';
@@ -10,19 +11,21 @@ const HERO_WELCOME_TEXT = 'Seja bem-vindo(a) ao meu portfolio!';
 const TYPEWRITER_INTERVAL_MS = 55;
 
 @Component({
-  imports: [ProjectShowcase, Resume],
+  imports: [ParticlesBackground, ProjectShowcase, Resume],
   selector: 'app-home',
   templateUrl: './home.html',
 })
 export class Home
 {
   private readonly document = inject(DOCUMENT);
+  private readonly hostRef = inject(ElementRef<HTMLElement>);
   private readonly destroyRef = inject(DestroyRef);
   private readonly smoothScroll = inject(SmoothScrollService);
 
   private typewriterTimer: ReturnType<typeof globalThis.setInterval> | null = null;
   private refreshFrameId: number | null = null;
   private gsapContext: gsap.Context | null = null;
+  private sectionObserver: IntersectionObserver | null = null;
 
   protected readonly heroSectionRef = viewChild<ElementRef<HTMLElement>>('heroSectionRef');
   protected readonly heroContentRef = viewChild<ElementRef<HTMLElement>>('heroContentRef');
@@ -33,20 +36,34 @@ export class Home
   protected readonly isTypingComplete = signal(false);
   protected readonly reducedMotion = signal(false);
 
+  private readonly activeSectionId = signal('hero');
+  private readonly projectAccents = signal<Record<string, string | undefined>>(
+    Object.fromEntries(HOME_PROJECTS.map((project) => [project.id, project.slides[0]?.accentGradient])),
+  );
+  protected readonly activeAccentGradient = computed(() => this.projectAccents()[this.activeSectionId()] ?? null);
+
   constructor()
   {
     afterNextRender(() => {
       this.startTypewriter();
       this.setupScrollAnimations();
+      this.setupSectionObserver();
       this.scheduleScrollTriggerRefresh();
     });
 
     this.destroyRef.onDestroy(() => {
       this.clearTypewriterTimer();
       this.cancelPendingRefresh();
+      this.sectionObserver?.disconnect();
+      this.sectionObserver = null;
       this.gsapContext?.revert();
       this.gsapContext = null;
     });
+  }
+
+  protected onProjectAccentChange(projectId: string, accentGradient: string | undefined): void
+  {
+    this.projectAccents.update((current) => (current[projectId] === accentGradient ? current : { ...current, [projectId]: accentGradient }));
   }
 
   private startTypewriter(): void
@@ -98,6 +115,29 @@ export class Home
         }
       });
     });
+  }
+
+  private setupSectionObserver(): void
+  {
+    const win = this.document.defaultView;
+    if (!win || typeof win.IntersectionObserver !== 'function') {
+      return;
+    }
+
+    this.sectionObserver = new win.IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const sectionId = entry.isIntersecting ? (entry.target as HTMLElement).dataset['particleSection'] : undefined;
+          if (sectionId) {
+            this.activeSectionId.set(sectionId);
+          }
+        }
+      },
+      { rootMargin: '-45% 0px -45% 0px', threshold: 0 },
+    );
+
+    const targets = (this.hostRef.nativeElement as HTMLElement).querySelectorAll<HTMLElement>('[data-particle-section]');
+    targets.forEach((target) => this.sectionObserver?.observe(target));
   }
 
   private scheduleScrollTriggerRefresh(): void
