@@ -1,8 +1,11 @@
 <main class="relative w-full bg-neutral-950 text-neutral-50">
+  <app-particles-background [accentGradient]="activeAccentGradient()" />
+
   <section
     #heroSectionRef
+    data-particle-section="hero"
     aria-label="Boas-vindas"
-    class="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden bg-neutral-950 px-5 pt-14 sm:px-8 lg:px-12"
+    class="relative z-10 flex min-h-screen w-full flex-col items-center justify-center overflow-hidden px-5 pt-14 sm:px-8 lg:px-12"
   >
     <div
       aria-hidden="true"
@@ -41,12 +44,17 @@
   </section>
 
   @for (project of projects; track project.id; let i = $index) {
-    <app-project-showcase [project]="project" [projectIndex]="i" />
+    <app-project-showcase
+      [attr.data-particle-section]="project.id"
+      [project]="project"
+      [projectIndex]="i"
+      (activeAccentChange)="onProjectAccentChange(project.id, $event)"
+    />
   } @empty {
-    <section class="flex min-h-[50vh] w-full items-center justify-center bg-neutral-950 px-5 py-16 text-sm text-white/50">
+    <section class="relative z-10 flex min-h-[50vh] w-full items-center justify-center px-5 py-16 text-sm text-white/50">
       Nenhum projeto disponível no momento.
     </section>
   }
 
-  <app-resume />
+  <app-resume data-particle-section="resume" />
 </main>

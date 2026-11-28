@@ -1,5 +1,5 @@
 import { DOCUMENT } from '@angular/common';
-import { Component, DestroyRef, ElementRef, afterNextRender, computed, inject, input, signal, viewChild } from '@angular/core';
+import { Component, DestroyRef, ElementRef, afterNextRender, computed, effect, inject, input, output, signal, viewChild } from '@angular/core';
 import { SmoothScrollService } from '@services/smooth-scroll.service';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -23,6 +23,7 @@ export class ProjectShowcase
 
   public readonly project = input.required<ProjectShowcaseItem>();
   public readonly projectIndex = input<number>(0);
+  public readonly activeAccentChange = output<string | undefined>();
 
   protected readonly sectionRef = viewChild<ElementRef<HTMLElement>>('sectionRef');
   protected readonly contentRef = viewChild<ElementRef<HTMLElement>>('contentRef');
@@ -40,6 +41,10 @@ export class ProjectShowcase
   constructor()
   {
     afterNextRender(() => this.setupScrollAnimation());
+
+    effect(() => {
+      this.activeAccentChange.emit(this.activeSlide()?.accentGradient);
+    });
 
     this.destroyRef.onDestroy(() => {
       this.pinTrigger = null;
